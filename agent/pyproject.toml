@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "runmon"
+version = "0.1.0"
+description = "Long-job companion: phone notifications when your training finishes, fails, or silently hangs."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+  "psutil>=5.9",
+  "nvidia-ml-py>=12.535",
+  "tomli>=2.0; python_version<'3.11'",
+  "tomli-w>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+mon = "runmon.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/runmon"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
