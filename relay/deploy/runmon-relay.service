@@ -1,0 +1,19 @@
+# systemd 单元:sudo cp 到 /etc/systemd/system/ 后 systemctl enable --now runmon-relay
+# 前置:python3 -m venv /opt/runmon-relay/venv && /opt/runmon-relay/venv/bin/pip install runmon-relay
+[Unit]
+Description=RunMon relay (E2EE store-and-forward)
+After=network.target
+
+[Service]
+Type=simple
+User=runmon
+Group=runmon
+WorkingDirectory=/opt/runmon-relay
+ExecStart=/opt/runmon-relay/venv/bin/python -m runmon_relay --host 127.0.0.1 --port 8080 --db /opt/runmon-relay/relay.db
+Restart=always
+RestartSec=3
+# 2G 内存小机器上的保险丝
+MemoryMax=300M
+
+[Install]
+WantedBy=multi-user.target
