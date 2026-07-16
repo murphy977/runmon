@@ -14,6 +14,8 @@ dependencies = [
   "nvidia-ml-py>=12.535",
   "tomli>=2.0; python_version<'3.11'",
   "tomli-w>=1.0",
+  "cryptography>=42",
+  "websockets>=12",
 ]
 
 [project.optional-dependencies]

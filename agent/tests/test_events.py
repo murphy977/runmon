@@ -86,3 +86,24 @@ def test_disk(tmp_path):
     assert engine.check_disk([("/", 95.0)]) is None                 # 去抖
     clock.now += 31 * 60
     assert engine.check_disk([("/", 95.0)]) is not None
+
+
+def test_mute_suppresses_alerts_not_exit(tmp_path):
+    store, clock, engine, run = make(tmp_path)
+    store.update_run(run.id, muted_until=clock.now + 3600, last_output_at=clock.now)
+    run = store.get_run(run.id)
+    # 告警类被静音
+    assert engine.on_output(run, "Traceback (most recent call last):") is None
+    clock.now += 31 * 60
+    assert engine.check_log_silence(store.get_run(run.id)) is None
+    # 完成/失败不受影响
+    assert engine.on_exit(store.get_run(run.id), 1).type == FAILED
+
+
+def test_emit_records_payload(tmp_path):
+    import json
+    store, _, engine, run = make(tmp_path)
+    engine.on_exit(run, 0)
+    rows = store.events_since(0)
+    payload = json.loads(rows[-1]["payload"])
+    assert payload["type"] == COMPLETED and "train" in payload["title"]

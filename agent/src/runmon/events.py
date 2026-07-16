@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import time
 from dataclasses import dataclass
@@ -37,6 +38,10 @@ class Event:
     body: str
     run_id: str | None = None
 
+    def to_dict(self) -> dict:
+        return {"type": self.type, "level": self.level, "title": self.title,
+                "body": self.body, "run_id": self.run_id}
+
 
 class EventEngine:
     def __init__(self, store, config, clock=time.time) -> None:
@@ -49,8 +54,13 @@ class EventEngine:
         return last is not None and self.clock() - last < self.config.debounce_minutes * 60
 
     def _emit(self, run_id: str | None, etype: str, level: str, title: str, body: str) -> Event:
-        self.store.record_event(run_id, etype, self.clock())
-        return Event(etype, level, title, body, run_id)
+        ev = Event(etype, level, title, body, run_id)
+        self.store.record_event(run_id, etype, self.clock(),
+                                payload=json.dumps(ev.to_dict(), ensure_ascii=False))
+        return ev
+
+    def _muted(self, run) -> bool:
+        return bool(run.muted_until) and run.muted_until > self.clock()
 
     def on_exit(self, run, exit_code: int) -> Event:
         dur = format_duration(self.clock() - run.started_at)
@@ -60,6 +70,8 @@ class EventEngine:
                           f"❌ {run.name} 失败 (exit {exit_code})", f"耗时 {dur}")
 
     def on_output(self, run, chunk: str) -> Event | None:
+        if self._muted(run):
+            return None
         for pat in ERROR_PATTERNS:
             if pat.search(chunk):
                 if self._debounced(run.id, ERROR_PATTERN):
@@ -69,6 +81,8 @@ class EventEngine:
         return None
 
     def check_gpu_hang(self, run, samples: list[tuple[float, float]]) -> Event | None:
+        if self._muted(run):
+            return None
         now = self.clock()
         if now - run.started_at < self.config.hang_warmup_minutes * 60:
             return None
@@ -85,6 +99,8 @@ class EventEngine:
                           f"{self.config.hang_gpu_threshold_pct}%,进程仍存活")
 
     def check_log_silence(self, run) -> Event | None:
+        if self._muted(run):
+            return None
         last = run.last_output_at or run.started_at
         if self.clock() - last < self.config.silence_minutes * 60:
             return None

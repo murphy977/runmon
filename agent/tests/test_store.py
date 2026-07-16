@@ -65,3 +65,35 @@ def test_outbox_flow(tmp_path):
     assert len(s.outbox_pending(now=None)) == 2        # 强制模式全取
     s.outbox_delivered(rows[1]["id"], ts=1500.0)
     assert s.outbox_remaining() == 1
+
+
+def test_migration_adds_columns(tmp_path):
+    import sqlite3
+    # 先造一个 M1 时代的旧库(无 muted_until / payload 列)
+    db = tmp_path / "old.db"
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE runs (id TEXT PRIMARY KEY, name TEXT NOT NULL, command TEXT NOT NULL,"
+                 " cwd TEXT NOT NULL DEFAULT '', pid INTEGER, status TEXT NOT NULL DEFAULT 'created',"
+                 " exit_code INTEGER, started_at REAL NOT NULL, ended_at REAL, updated_at REAL NOT NULL,"
+                 " last_output_at REAL, output_tail TEXT NOT NULL DEFAULT '', output_length INTEGER NOT NULL DEFAULT 0,"
+                 " log_path TEXT NOT NULL DEFAULT '', progress REAL, eta_seconds INTEGER, last_loss REAL,"
+                 " gpu_indices TEXT NOT NULL DEFAULT '')")
+    conn.execute("CREATE TABLE events (id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT, type TEXT NOT NULL, ts REAL NOT NULL)")
+    conn.execute("INSERT INTO runs (id,name,command,started_at,updated_at) VALUES ('old1','n','c',1,1)")
+    conn.commit()
+    conn.close()
+    s = RunStore(db)                       # 打开时自动迁移
+    run = s.get_run("old1")
+    assert run.muted_until is None
+    s.update_run("old1", muted_until=999.0)
+    assert s.get_run("old1").muted_until == 999.0
+
+
+def test_event_payload_and_since(tmp_path):
+    s = make_store(tmp_path)
+    s.record_event("r1", "failed", 100.0, payload='{"title":"x"}')
+    s.record_event("r1", "completed", 200.0)
+    rows = s.events_since(0)
+    assert len(rows) == 2
+    assert rows[0]["payload"] == '{"title":"x"}' and rows[1]["payload"] is None
+    assert s.events_since(rows[0]["id"])[0]["type"] == "completed"

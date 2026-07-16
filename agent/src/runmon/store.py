@@ -28,13 +28,15 @@ CREATE TABLE IF NOT EXISTS runs (
   progress REAL,
   eta_seconds INTEGER,
   last_loss REAL,
-  gpu_indices TEXT NOT NULL DEFAULT ''
+  gpu_indices TEXT NOT NULL DEFAULT '',
+  muted_until REAL
 );
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   run_id TEXT,
   type TEXT NOT NULL,
-  ts REAL NOT NULL
+  ts REAL NOT NULL,
+  payload TEXT
 );
 CREATE TABLE IF NOT EXISTS outbox (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,7 +51,7 @@ CREATE TABLE IF NOT EXISTS outbox (
 _RUN_COLUMNS = (
     "id", "name", "command", "cwd", "pid", "status", "exit_code", "started_at",
     "ended_at", "updated_at", "last_output_at", "output_tail", "output_length",
-    "log_path", "progress", "eta_seconds", "last_loss", "gpu_indices",
+    "log_path", "progress", "eta_seconds", "last_loss", "gpu_indices", "muted_until",
 )
 
 
@@ -73,6 +75,7 @@ class RunRecord:
     eta_seconds: int | None
     last_loss: float | None
     gpu_indices: str
+    muted_until: float | None
 
 
 class RunStore:
@@ -85,7 +88,16 @@ class RunStore:
         with self._lock:
             self._conn.execute("PRAGMA journal_mode=WAL")
             self._conn.executescript(_SCHEMA)
+            self._migrate_locked()
             self._conn.commit()
+
+    def _migrate_locked(self) -> None:
+        run_cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(runs)")}
+        if "muted_until" not in run_cols:
+            self._conn.execute("ALTER TABLE runs ADD COLUMN muted_until REAL")
+        event_cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(events)")}
+        if "payload" not in event_cols:
+            self._conn.execute("ALTER TABLE events ADD COLUMN payload TEXT")
 
     def _row_to_run(self, row: sqlite3.Row) -> RunRecord:
         return RunRecord(**{k: row[k] for k in _RUN_COLUMNS})
@@ -143,11 +155,18 @@ class RunStore:
                 "SELECT * FROM runs ORDER BY started_at DESC LIMIT ?", (limit,)).fetchall()
         return [self._row_to_run(r) for r in rows]
 
-    def record_event(self, run_id: str | None, etype: str, ts: float) -> None:
+    def record_event(self, run_id: str | None, etype: str, ts: float,
+                     payload: str | None = None) -> None:
         with self._lock:
-            self._conn.execute("INSERT INTO events (run_id, type, ts) VALUES (?,?,?)",
-                               (run_id, etype, ts))
+            self._conn.execute("INSERT INTO events (run_id, type, ts, payload) VALUES (?,?,?,?)",
+                               (run_id, etype, ts, payload))
             self._conn.commit()
+
+    def events_since(self, last_id: int, limit: int = 200) -> list[sqlite3.Row]:
+        with self._lock:
+            return self._conn.execute(
+                "SELECT * FROM events WHERE id>? ORDER BY id LIMIT ?",
+                (last_id, limit)).fetchall()
 
     def last_event_at(self, run_id: str | None, etype: str) -> float | None:
         if run_id is None:
