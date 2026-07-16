@@ -168,6 +168,16 @@ def cmd_init(args) -> int:
     return 0
 
 
+def cmd_demo(args) -> int:
+    demo_args = [sys.executable, "-m", "runmon.demo_train"]
+    if args.fail:
+        demo_args.append("--fail")
+    if args.hang:
+        demo_args.append("--hang")
+    from .runner import RunWrapper
+    return RunWrapper(demo_args, name="runmon-demo").execute()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mon", description="RunMon — 长任务陪伴器")
     sub = parser.add_subparsers(dest="cmd")
@@ -200,6 +210,11 @@ def main(argv: list[str] | None = None) -> int:
     p_init.add_argument("--no-test", action="store_true")
     p_init.add_argument("--reset", action="store_true", help="清空已有通道后再写入")
     p_init.set_defaults(func=cmd_init)
+
+    p_demo = sub.add_parser("demo", help="跑一个演示训练任务")
+    p_demo.add_argument("--fail", action="store_true")
+    p_demo.add_argument("--hang", action="store_true")
+    p_demo.set_defaults(func=cmd_demo)
 
     args = parser.parse_args(argv)
     if not getattr(args, "func", None):
