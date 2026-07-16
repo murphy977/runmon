@@ -118,6 +118,7 @@ class Notifier:
         self._wake = threading.Event()
         self._halt = threading.Event()
         self._thread: threading.Thread | None = None
+        self._deliver_lock = threading.Lock()  # worker 线程与 flush 互斥,防止同条重复投递
 
     def notify(self, ev: Event) -> None:
         payload = _event_to_json(ev)
@@ -126,6 +127,10 @@ class Notifier:
         self._wake.set()
 
     def deliver_due(self, force: bool = False) -> int:
+        with self._deliver_lock:
+            return self._deliver_due_locked(force)
+
+    def _deliver_due_locked(self, force: bool) -> int:
         now = self.clock()
         rows = self.store.outbox_pending(None if force else now)
         for row in rows:
