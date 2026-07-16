@@ -23,8 +23,12 @@
 ## Roadmap
 
 - [x] **M1 — Agent 单机版**(`agent/`):`mon run` 包装、五类事件(完成/失败/GPU 假死/日志静默/磁盘)、ntfy/Bark/Telegram/webhook 推送、进度/ETA/loss 零埋点解析、`mon ls/status/stop/init/demo`
-- [ ] **M2 — Relay + 安卓 App**:实时终端流、GPU 曲线、白名单远程操作(stop/rerun/tail/mute)、扫码配对、离线告警
+- [x] **M2a — Relay + agent 联网**(`relay/`):E2EE 全链路(ChaCha20-Poly1305,relay 只存密文)、`mon pair` 配对、`mon daemon` 实时同步(快照/输出尾窗/事件/GPU 心跳)、白名单指令(stop/rerun/tail/mute)、离线指令暂存
+- [x] **M2b — 安卓 App**(`app/`,Flutter):配对、服务器列表(在线状态/GPU 条)、任务列表、任务详情(实时终端流/进度/loss/操作按钮)
+- [ ] **M2 收尾**:真机联调打磨、二维码扫码配对、事件系统通知、relay 部署上云
 - [ ] **M3 — 完全体**:tmux 接管已在跑的任务、多服务器面板、跑完自动关机、Claude Code 等待输入检测
+
+本地联调:`./scripts/dev-stack.sh`(起 relay + 配对 + daemon,手机同 WiFi 粘贴配对载荷即可)。
 
 ## 快速开始
 
