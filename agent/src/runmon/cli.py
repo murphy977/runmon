@@ -168,6 +168,67 @@ def cmd_init(args) -> int:
     return 0
 
 
+def _relay_post(url: str, path: str, body: dict) -> dict:
+    import json
+    import urllib.request
+    req = urllib.request.Request(url.rstrip("/") + path,
+                                 data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read())
+
+
+def cmd_pair(args) -> int:
+    import json
+    import socket
+    from .crypto import generate_key, key_to_b64
+
+    url = args.relay.rstrip("/")
+    name = args.name or socket.gethostname()
+    try:
+        start = _relay_post(url, "/api/pair/start", {"device_name": name})
+    except Exception as exc:
+        print(f"无法连接 relay:{exc}", file=sys.stderr)
+        return 1
+    key_b64 = key_to_b64(generate_key())
+    cfg = Config.load()
+    cfg.relay = {"url": url, "device_id": start["device_id"],
+                 "device_token": start["device_token"], "key": key_b64}
+    cfg.save()
+    payload = json.dumps({"u": url, "c": start["code"], "k": key_b64},
+                         separators=(",", ":"))
+    print("在手机 App 上粘贴以下配对载荷(10 分钟内有效):\n")
+    print(f"  {payload}\n")
+    print(f"配对码:{start['code']}")
+    if args.no_wait:
+        return 0
+    print("等待手机认领", end="", flush=True)
+    deadline = time.time() + 600
+    while time.time() < deadline:
+        time.sleep(2)
+        print(".", end="", flush=True)
+        try:
+            st = _relay_post(url, "/api/pair/status",
+                             {"code": start["code"], "pair_token": start["pair_token"]})
+            if st.get("claimed"):
+                print(f"\n✅ 已与「{st.get('app_name') or '手机'}」配对。现在运行:mon daemon")
+                return 0
+        except Exception:
+            pass
+    print("\n超时未认领,可重新运行 mon pair。")
+    return 1
+
+
+def cmd_daemon(_args) -> int:
+    import asyncio
+    from .relay_client import Daemon
+    try:
+        asyncio.run(Daemon().run_forever())
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
 def cmd_demo(args) -> int:
     demo_args = [sys.executable, "-m", "runmon.demo_train"]
     if args.fail:
@@ -210,6 +271,15 @@ def main(argv: list[str] | None = None) -> int:
     p_init.add_argument("--no-test", action="store_true")
     p_init.add_argument("--reset", action="store_true", help="清空已有通道后再写入")
     p_init.set_defaults(func=cmd_init)
+
+    p_pair = sub.add_parser("pair", help="与手机 App 配对(经 relay)")
+    p_pair.add_argument("--relay", required=True, help="relay 地址,如 https://mon.example.com")
+    p_pair.add_argument("--name", help="本机显示名(默认 hostname)")
+    p_pair.add_argument("--no-wait", action="store_true", help="不等待手机认领")
+    p_pair.set_defaults(func=cmd_pair)
+
+    p_daemon = sub.add_parser("daemon", help="常驻守护:同步状态到 relay 并接收指令")
+    p_daemon.set_defaults(func=cmd_daemon)
 
     p_demo = sub.add_parser("demo", help="跑一个演示训练任务")
     p_demo.add_argument("--fail", action="store_true")

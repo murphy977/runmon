@@ -42,6 +42,7 @@ class Config:
     ring_buffer_kb: int = 512
     notify_include_tail: int = 0
     channels: list[dict] = field(default_factory=list)
+    relay: dict = field(default_factory=dict)
 
     @classmethod
     def load(cls, path: Path | None = None) -> Config:
@@ -50,15 +51,21 @@ class Config:
             return cls()
         data = tomllib.loads(p.read_text(encoding="utf-8"))
         channels = data.pop("channel", [])
-        known = {f for f in cls.__dataclass_fields__ if f != "channels"}
+        relay = data.pop("relay", {})
+        known = {f for f in cls.__dataclass_fields__ if f not in ("channels", "relay")}
         cfg = cls(**{k: v for k, v in data.items() if k in known})
         cfg.channels = list(channels)
+        cfg.relay = dict(relay)
         return cfg
 
     def save(self, path: Path | None = None) -> None:
         p = path or config_path()
         p.parent.mkdir(parents=True, exist_ok=True)
         data = asdict(self)
-        data["channel"] = data.pop("channels")
+        channels = data.pop("channels")
+        relay = data.pop("relay")
+        if relay:  # TOML 要求标量在前、表在后
+            data["relay"] = relay
+        data["channel"] = channels
         p.write_text(tomli_w.dumps(data), encoding="utf-8")
         p.chmod(0o600)
