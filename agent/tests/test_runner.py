@@ -65,7 +65,8 @@ sys.stdout.write("50%|-----| 50/100 [00:10<00:10,  5.0it/s] loss=0.5\n")
     w, store, _ = make_wrapper(env, code)
     w.execute()
     run = store.get_run(w.run.id)
-    assert run.progress == 50.0 and run.last_loss == 0.5
+    # 成功完成的任务进度收敛到 100%,loss 保留最后解析值
+    assert run.progress == 100.0 and run.last_loss == 0.5
 
 
 def test_monitor_disk_event(env, monkeypatch):

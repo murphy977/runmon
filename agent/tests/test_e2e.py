@@ -63,4 +63,5 @@ def test_demo_records_progress(isolated):
               "--epochs", "1", "--steps", "10", "--delay", "0.01"])
     from runmon.store import RunStore
     run = RunStore().resolve_run("demo-prog")
-    assert run.progress is not None and run.last_loss is not None
+    assert run.progress == 100.0 and run.last_loss is not None
+    assert run.eta_seconds is None

@@ -68,8 +68,12 @@ class RunWrapper:
             mon.join(timeout=2)
 
         status = "completed" if exit_code == 0 else "failed"
+        st = self.parser.state
+        final_progress = 100.0 if (exit_code == 0 and st.percent is not None) else st.percent
         self.store.update_run(self.run.id, status=status, exit_code=exit_code,
-                              ended_at=time.time())
+                              ended_at=time.time(), progress=final_progress,
+                              eta_seconds=None if exit_code == 0 else st.eta_seconds,
+                              last_loss=st.loss)
         try:
             ev = self.engine.on_exit(self.store.get_run(self.run.id), exit_code)
             self.notifier.notify(ev)
