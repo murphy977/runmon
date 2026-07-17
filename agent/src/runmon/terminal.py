@@ -18,9 +18,15 @@ class PtyShell:
         self.fd: int | None = None
         self._loop = None
 
-    def open(self, loop, rows: int = 24, cols: int = 80) -> None:
+    def open(self, loop, rows: int = 24, cols: int = 80,
+             cwd: str | None = None) -> None:
         pid, fd = pty.fork()
         if pid == 0:  # 子进程:换成登录 shell
+            if cwd:
+                try:
+                    os.chdir(cwd)
+                except OSError:
+                    pass
             env = dict(os.environ)
             env["TERM"] = "xterm-256color"
             shell = env.get("SHELL", "/bin/bash")

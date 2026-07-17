@@ -86,11 +86,11 @@ def test_terminal_echo(tmp_path, server):
     asyncio.run(main())
 
 
-def test_terminal_disabled_by_default(tmp_path, server):
+def test_terminal_hard_disabled(tmp_path, server):
     base = server
     start, claim = _pair(base)
     key = generate_key()
-    cfg = Config()  # enable_terminal 默认 False
+    cfg = Config(enable_terminal=False)  # 服务器主人一票否决
     cfg.relay = {"url": base, "device_id": start["device_id"],
                  "device_token": start["device_token"], "key": key_to_b64(key)}
     daemon = Daemon(store=RunStore(tmp_path / "a.db"), config=cfg)

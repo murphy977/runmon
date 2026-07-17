@@ -7,7 +7,10 @@ import '../ui.dart';
 class TerminalPage extends StatefulWidget {
   final String agentId;
   final String agentName;
-  const TerminalPage({super.key, required this.agentId, required this.agentName});
+  final String? cwd;
+  final String? presetCommand;
+  const TerminalPage({super.key, required this.agentId, required this.agentName,
+      this.cwd, this.presetCommand});
 
   @override
   State<TerminalPage> createState() => _TerminalPageState();
@@ -23,7 +26,7 @@ class _TerminalPageState extends State<TerminalPage> {
     terminal.onResize = (w, h, pw, ph) =>
         appState.termResize(widget.agentId, h, w);
     appState.openTerminal(widget.agentId, terminal.write,
-        rows: terminal.viewHeight, cols: terminal.viewWidth);
+        rows: terminal.viewHeight, cols: terminal.viewWidth, cwd: widget.cwd);
   }
 
   @override
@@ -43,13 +46,48 @@ class _TerminalPageState extends State<TerminalPage> {
         iconTheme: const IconThemeData(color: Rm.terminalText, size: 20),
       ),
       body: SafeArea(
-        child: TerminalView(
+        child: Column(children: [
+          if (widget.presetCommand != null)
+            _PresetBar(command: widget.presetCommand!,
+                onFill: () => appState.termInput(
+                    widget.agentId, widget.presetCommand!)),
+          Expanded(child: TerminalView(
           terminal,
           textStyle: const TerminalStyle(fontSize: 13, fontFamily: Rm.mono),
           theme: TerminalThemes.defaultTheme,
           autofocus: true,
-        ),
+        )),
+        ]),
       ),
+    );
+  }
+}
+
+
+class _PresetBar extends StatelessWidget {
+  final String command;
+  final VoidCallback onFill;
+  const _PresetBar({required this.command, required this.onFill});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF1E262E),
+      padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+      child: Row(children: [
+        Expanded(
+          child: Text(command,
+              maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: mono(size: 12, color: Rm.terminalText)),
+        ),
+        TextButton(
+          onPressed: onFill,
+          style: TextButton.styleFrom(
+              foregroundColor: Rm.pear,
+              textStyle: sans(size: 13, weight: FontWeight.w600)),
+          child: const Text('填入命令'),
+        ),
+      ]),
     );
   }
 }

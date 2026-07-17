@@ -213,6 +213,7 @@ class _Conn {
 class AppState extends ChangeNotifier {
   final Map<String, AgentState> agents = {};
   final Map<String, _Conn> _conns = {};
+  final Set<String> _termOk = {};
   String? lastNotice;
 
   Future<void> init() async {
@@ -220,6 +221,7 @@ class AppState extends ChangeNotifier {
     for (final raw in prefs.getStringList('servers') ?? []) {
       _attach(ServerLink.fromJson(jsonDecode(raw)));
     }
+    _termOk.addAll(prefs.getStringList('term_ok') ?? []);
     notifyListeners();
   }
 
@@ -273,6 +275,7 @@ class AppState extends ChangeNotifier {
   Future<void> removeServer(String agentId) async {
     _conns.remove(agentId)?.close();
     agents.remove(agentId);
+    _termOk.remove(agentId);
     await _persist();
     notifyListeners();
   }
@@ -283,12 +286,22 @@ class AppState extends ChangeNotifier {
       _conns[agentId]?.sendCmd(op, runId, args) ??
       Future.value({'ok': false, 'error': '连接不存在'});
 
+  bool isTermConfirmed(String agentId) => _termOk.contains(agentId);
+
+  Future<void> confirmTerm(String agentId) async {
+    _termOk.add(agentId);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('term_ok', _termOk.toList());
+  }
+
   Future<void> openTerminal(String agentId, void Function(String) onData,
-      {int rows = 24, int cols = 80}) async {
+      {int rows = 24, int cols = 80, String? cwd}) async {
     final c = _conns[agentId];
     if (c == null) return;
     c.termSink = onData;
-    await c.sendTerm('term_open', {'rows': rows, 'cols': cols});
+    final payload = <String, dynamic>{'rows': rows, 'cols': cols};
+    if (cwd != null && cwd.isNotEmpty) payload['cwd'] = cwd;
+    await c.sendTerm('term_open', payload);
   }
 
   Future<void> termInput(String agentId, String data) =>

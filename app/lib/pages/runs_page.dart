@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../state.dart';
 import '../ui.dart';
 import 'run_detail_page.dart';
-import 'terminal_page.dart';
+import '../terminal_gate.dart';
 
 class RunsPage extends StatelessWidget {
   final String agentId;
@@ -22,9 +22,7 @@ class RunsPage extends StatelessWidget {
               tooltip: '终端',
               icon: const Icon(Icons.terminal_rounded),
               onPressed: agent.online
-                  ? () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => TerminalPage(
-                          agentId: agentId, agentName: agent.name)))
+                  ? () => openTerminalGuarded(context, agentId, agent.name)
                   : null,
             ),
             const SizedBox(width: 8),

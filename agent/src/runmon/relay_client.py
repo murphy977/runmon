@@ -211,7 +211,8 @@ class Daemon:
 
             self._pty = PtyShell(on_output)
             self._pty.open(loop, rows=int(payload.get("rows", 24)),
-                           cols=int(payload.get("cols", 80)))
+                           cols=int(payload.get("cols", 80)),
+                           cwd=payload.get("cwd") or None)
         elif t == "term_input" and self._pty and self._pty.alive:
             self._pty.write(decrypt(msg["enc"], self.key).get("data", ""))
         elif t == "term_resize" and self._pty and self._pty.alive:

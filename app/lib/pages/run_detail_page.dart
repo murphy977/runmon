@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../state.dart';
 import '../ui.dart';
+import '../terminal_gate.dart';
 
 class RunDetailPage extends StatefulWidget {
   final String agentId;
@@ -204,6 +205,16 @@ class _RunDetailPageState extends State<RunDetailPage> {
                               shutdownAfter
                                   ? null
                                   : '任务跑完后自动关机?\n服务器需允许免密 sudo shutdown。'),
+                    ),
+                    SoftButton(
+                      label: '终端', icon: Icons.terminal_rounded,
+                      deep: Rm.ink, tint: Rm.pearTint,
+                      onPressed: !agent.online
+                          ? null
+                          : () => openTerminalGuarded(
+                              context, widget.agentId, agent.name,
+                              cwd: run['cwd'] as String?,
+                              command: run['command'] as String?),
                     ),
                     SoftButton(
                       label: '完整日志', icon: Icons.article_outlined,
