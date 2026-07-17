@@ -67,8 +67,6 @@ python -m runmon_relay --host 127.0.0.1 --port 8080
 | `agent/` | Python 包 `runmon`,CLI `mon` |
 | `relay/` | Python 包 `runmon-relay`,FastAPI 中转 |
 | `app/` | Flutter 手机 App(安卓,可复用出 iOS) |
-| `site/` | 官网(自包含静态页) |
-| `docs/` | 设计文档与实施计划 |
 
 ## 安全
 
