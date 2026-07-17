@@ -108,14 +108,13 @@ h1{font-size:clamp(2.4rem,5.6vw,4.3rem);line-height:1.08;font-weight:700;
 hr.thick{border:0;height:1px;background:var(--hairline);margin:0}
 
 /* 痛点 band — 深色,和浅色页面形成节奏 */
-.pain{background:var(--term-bg);padding:76px 0;color:var(--paper)}
-.eyebrow.dark{color:rgba(226,222,208,.55)}
-.pain h2{font-size:clamp(1.5rem,3vw,2rem);font-weight:700;letter-spacing:-.025em;margin:14px 0 36px;max-width:20ch;color:var(--paper)}
+.pain{background:var(--coral-tint);padding:76px 0;color:var(--ink)}
+.pain h2{font-size:clamp(1.5rem,3vw,2rem);font-weight:700;letter-spacing:-.025em;margin:14px 0 36px;max-width:20ch;color:var(--ink)}
 .pain-rows{display:grid;gap:0}
-.pain-row{display:flex;gap:18px;align-items:baseline;padding:20px 0;border-top:1px solid rgba(255,255,255,.08)}
+.pain-row{display:flex;gap:18px;align-items:baseline;padding:20px 0;border-top:1px solid var(--hairline)}
 .pain-row:first-child{border-top:0}
-.pain-row .n{font-family:var(--mono);font-size:13px;color:var(--pear);min-width:30px}
-.pain-row p{font-size:clamp(1.05rem,2vw,1.32rem);font-weight:500;color:#D9D5C9;line-height:1.5}
+.pain-row .n{font-family:var(--mono);font-size:13px;color:var(--coral-deep);min-width:30px}
+.pain-row p{font-size:clamp(1.05rem,2vw,1.32rem);font-weight:500;color:var(--ink);line-height:1.5}
 
 /* 功能 bento */
 .features{padding:88px 0}
@@ -232,7 +231,7 @@ footer{padding:56px 0 64px;border-top:1px solid var(--hairline)}
 
 <section class="pain">
   <div class="wrap">
-    <div class="eyebrow dark">你是不是也这样</div>
+    <div class="eyebrow">你是不是也这样</div>
     <h2>跑一次训练,一整天心不在焉。</h2>
     <div class="pain-rows">
       <div class="pain-row"><span class="n">01</span><p>跑了几个小时,中途报错。GPU 已经空闲半天,你还不知道。</p></div>
