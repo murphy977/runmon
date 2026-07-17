@@ -6,6 +6,7 @@ import signal
 import sys
 import time
 
+from . import __version__
 from .config import Config, config_path
 from .events import format_duration
 from .store import RunStore
@@ -174,7 +175,7 @@ def _relay_post(url: str, path: str, body: dict) -> dict:
     req = urllib.request.Request(url.rstrip("/") + path,
                                  data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json",
-                                          "User-Agent": "runmon/1.0.0"})
+                                          "User-Agent": f"runmon/{__version__}"})
     with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read())
 

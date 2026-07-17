@@ -12,7 +12,7 @@ from pathlib import Path
 
 import psutil
 
-from . import sampler
+from . import __version__, sampler
 from .config import Config
 from .crypto import decrypt, encrypt, key_from_b64
 from .store import RunStore
@@ -163,7 +163,7 @@ class Daemon:
                         self.ws_url(), proxy=None,
                         additional_headers={"Authorization": f"Bearer {self.token}",
                                             "X-Device": self.device_id,
-                                            "User-Agent": "runmon/1.0.0"}) as ws:
+                                            "User-Agent": f"runmon/{__version__}"}) as ws:
                     backoff = 1.0
                     self._ws = ws
                     print(f"[mon daemon] 已连接 {self.url}")

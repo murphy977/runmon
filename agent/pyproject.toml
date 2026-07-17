@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "runmon"
-version = "1.0.0"
+version = "1.0.1"
 description = "Long-job companion: phone notifications when your training finishes, fails, or silently hangs."
 readme = "README.md"
 requires-python = ">=3.10"
