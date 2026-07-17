@@ -174,7 +174,7 @@ def _relay_post(url: str, path: str, body: dict) -> dict:
     req = urllib.request.Request(url.rstrip("/") + path,
                                  data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json",
-                                          "User-Agent": "runmon/0.1.0"})
+                                          "User-Agent": "runmon/1.0.0"})
     with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read())
 

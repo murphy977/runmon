@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "runmon-relay"
-version = "0.1.0"
+version = "1.0.0"
 description = "Self-hosted E2EE relay for RunMon: stores and forwards ciphertext between agents and phone apps."
 requires-python = ">=3.10"
 license = "MIT"

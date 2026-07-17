@@ -163,7 +163,7 @@ class Daemon:
                         self.ws_url(), proxy=None,
                         additional_headers={"Authorization": f"Bearer {self.token}",
                                             "X-Device": self.device_id,
-                                            "User-Agent": "runmon/0.1.0"}) as ws:
+                                            "User-Agent": "runmon/1.0.0"}) as ws:
                     backoff = 1.0
                     self._ws = ws
                     print(f"[mon daemon] 已连接 {self.url}")
