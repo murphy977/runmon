@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'notifications.dart';
+import 'pages/events_page.dart';
 import 'pages/pair_page.dart';
 import 'pages/runs_page.dart';
 import 'state.dart';
@@ -8,6 +10,7 @@ import 'ui.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   appState.init();
+  initNotifications();
   runApp(const RunMonApp());
 }
 
@@ -61,6 +64,15 @@ class _HomePageState extends State<HomePage> {
                   decoration: const BoxDecoration(
                       color: Rm.pear, shape: BoxShape.circle)),
             ]),
+            actions: [
+              IconButton(
+                tooltip: '事件',
+                icon: const Icon(Icons.notifications_none_rounded),
+                onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const EventsPage())),
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
           floatingActionButton: Padding(
             padding: const EdgeInsets.only(bottom: 6, right: 6),

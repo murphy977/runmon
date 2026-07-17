@@ -11,6 +11,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/io.dart';
 
+import 'notifications.dart';
+
 final _chacha = Chacha20.poly1305Aead();
 
 Future<Map<String, dynamic>> decryptEnv(
@@ -153,9 +155,12 @@ class _Conn {
           agent.tails[data['run_id'] as String] = data['tail'] as String;
         case 'event':
           final data = await decryptEnv(msg['enc'], _key);
+          data['received_at'] = DateTime.now().millisecondsSinceEpoch;
           agent.events.insert(0, data);
           if (agent.events.length > 100) agent.events.removeLast();
           onNotice('${data['title']}\n${data['body']}');
+          showEventNotification(data['title'] as String? ?? 'RunMon',
+              data['body'] as String? ?? '');
         case 'cmd_result':
           final data = await decryptEnv(msg['enc'], _key);
           _pending.remove(msg['cmd_id'])?.complete(data);

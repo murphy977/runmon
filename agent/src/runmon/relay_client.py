@@ -148,7 +148,8 @@ class Daemon:
                 async with websockets.connect(
                         self.ws_url(), proxy=None,
                         additional_headers={"Authorization": f"Bearer {self.token}",
-                                            "X-Device": self.device_id}) as ws:
+                                            "X-Device": self.device_id,
+                                            "User-Agent": "runmon/0.1.0"}) as ws:
                     backoff = 1.0
                     print(f"[mon daemon] 已连接 {self.url}")
                     await asyncio.gather(self._reader(ws), self._sync_loop(ws))
