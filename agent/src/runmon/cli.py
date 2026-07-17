@@ -250,6 +250,45 @@ def cmd_attach(args) -> int:
         return 1
 
 
+def cmd_logs(args) -> int:
+    import time as _t
+    store = RunStore()
+    run = store.resolve_run(args.run) if args.run else (
+        store.list_runs(limit=1)[0] if store.list_runs(limit=1) else None)
+    if run is None:
+        print("找不到任务(用 mon ls 看看有哪些)", file=sys.stderr)
+        return 1
+    if not run.log_path or not os.path.exists(run.log_path):
+        print(f"任务「{run.name}」还没有日志文件", file=sys.stderr)
+        return 1
+    print(f"—— {run.name}({run.status})日志 ——", file=sys.stderr)
+    with open(run.log_path, "rb") as f:
+        if not args.all:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 200 * 1024))  # 默认只回放尾部 200KB
+        sys.stdout.buffer.write(f.read())
+        sys.stdout.flush()
+        if not args.follow:
+            return 0
+        try:
+            while True:
+                chunk = f.read()
+                if chunk:
+                    sys.stdout.buffer.write(chunk)
+                    sys.stdout.flush()
+                    continue
+                latest = store.get_run(run.id)
+                if latest and latest.status not in ("running", "created"):
+                    sys.stdout.buffer.write(f.read())
+                    sys.stdout.flush()
+                    print(f"\n—— 任务已{latest.status} ——", file=sys.stderr)
+                    break
+                _t.sleep(0.5)
+        except KeyboardInterrupt:
+            print("\n(停止跟随,任务不受影响)", file=sys.stderr)
+    return 0
+
+
 def cmd_demo(args) -> int:
     demo_args = [sys.executable, "-m", "runmon.demo_train"]
     if args.fail:
@@ -306,6 +345,12 @@ def main(argv: list[str] | None = None) -> int:
     p_attach.add_argument("target", help="tmux 目标,如 会话名 / 会话:窗口.窗格")
     p_attach.add_argument("--name", help="任务名(默认 tmux:<目标>)")
     p_attach.set_defaults(func=cmd_attach)
+
+    p_logs = sub.add_parser("logs", help="查看/实时跟随任务输出(后台重跑也能看)")
+    p_logs.add_argument("run", nargs="?", help="任务 id/前缀/名字(缺省取最新)")
+    p_logs.add_argument("-f", "--follow", action="store_true", help="实时跟随(Ctrl+C 退出)")
+    p_logs.add_argument("--all", action="store_true", help="从头输出全部(默认只尾部 200KB)")
+    p_logs.set_defaults(func=cmd_logs)
 
     p_demo = sub.add_parser("demo", help="跑一个演示训练任务")
     p_demo.add_argument("--fail", action="store_true")
