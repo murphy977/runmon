@@ -16,6 +16,24 @@ class RunDetailPage extends StatefulWidget {
 class _RunDetailPageState extends State<RunDetailPage> {
   final _scroll = ScrollController();
   bool _busy = false;
+  bool _atBottom = true;  // 用户是否在底部,决定新输出要不要自动跟随
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(() {
+      if (_scroll.hasClients) {
+        _atBottom = _scroll.position.pixels >=
+            _scroll.position.maxScrollExtent - 40;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   Future<void> _cmd(String op,
       [Map<String, dynamic>? args, String? confirmText]) async {
@@ -96,7 +114,7 @@ class _RunDetailPageState extends State<RunDetailPage> {
         final running = status == 'running';
         final shutdownAfter = run['shutdown_after'] == 1;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scroll.hasClients) {
+          if (_scroll.hasClients && _atBottom) {  // 只在用户没上滑时才跟随到底
             _scroll.jumpTo(_scroll.position.maxScrollExtent);
           }
         });

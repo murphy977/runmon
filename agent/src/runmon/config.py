@@ -42,7 +42,7 @@ class Config:
     ring_buffer_kb: int = 512
     notify_include_tail: int = 0
     shutdown_command: str = "sudo -n shutdown -h +1"
-    enable_terminal: bool = True
+    enable_terminal: bool = True  # 默认信任已配对 App;设 false 可硬禁用远程终端
     channels: list[dict] = field(default_factory=list)
     relay: dict = field(default_factory=dict)
 

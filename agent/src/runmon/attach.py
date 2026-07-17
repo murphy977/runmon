@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import threading
 import time
@@ -46,7 +47,7 @@ class TmuxAttach:
         log_path = data_dir() / "logs" / f"{self.run.id}.log"
         self.store.update_run(self.run.id, log_path=str(log_path),
                               pid=self.pane_pid, status="running")
-        _tmux("pipe-pane", "-t", pane_id, "-o", f"cat >> {log_path}")
+        _tmux("pipe-pane", "-t", pane_id, "-o", f"cat >> {shlex.quote(str(log_path))}")
         log_path.touch()
         self.notifier.start()
         print(f"[mon] 已接管 {self.target}(pane {pane_id}),Ctrl+C 停止监控(不影响任务)")

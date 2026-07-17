@@ -46,15 +46,19 @@ class RunWrapper:
             log_path="", gpu_indices=self.gpu_indices)
         log_path = log_dir / f"{self.run.id}.log"
         self.store.update_run(self.run.id, log_path=str(log_path))
-        try:  # rerun 用的环境快照(仅存本机)
-            (log_dir / f"{self.run.id}.env.json").write_text(
-                json.dumps(dict(os.environ)), encoding="utf-8")
+        try:  # rerun 用的环境快照(仅存本机,含 token 等敏感值 → 0600)
+            env_snap = log_dir / f"{self.run.id}.env.json"
+            env_snap.write_text(json.dumps(dict(os.environ)), encoding="utf-8")
+            env_snap.chmod(0o600)
         except Exception:
             pass
 
         pid, master = pty.fork()
         if pid == 0:  # 子进程
-            os.execvp(self.command[0], self.command)
+            try:
+                os.execvp(self.command[0], self.command)
+            except Exception:
+                os._exit(127)  # 命令不存在等:干净退出,勿把异常抛穿父进程栈
         self.child_pid = pid
         self.store.update_run(self.run.id, pid=pid, status="running")
         self.notifier.start()  # 在 fork 之后再起线程,避免多线程 fork 风险

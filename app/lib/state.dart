@@ -85,6 +85,7 @@ class _Conn {
   final void Function(String) onNotice;
   IOWebSocketChannel? _ch;
   bool _closed = false;
+  bool _reconnecting = false;
   double _backoff = 1;
   late final List<int> _key = keyFromB64(link.keyB64);
   final Map<String, Completer<Map<String, dynamic>>> _pending = {};
@@ -134,11 +135,16 @@ class _Conn {
   }
 
   void _scheduleReconnect() {
-    if (_closed) return;
+    if (_closed || _reconnecting) return;  // onDone 和 onError 常同时触发,只调度一次
+    _reconnecting = true;
+    _ch = null;
     agent.connected = false;
     agent.online = false;
     onChange();
-    Timer(Duration(milliseconds: (_backoff * 1000).round()), _connect);
+    Timer(Duration(milliseconds: (_backoff * 1000).round()), () {
+      _reconnecting = false;
+      _connect();
+    });
     _backoff = min(_backoff * 2, 30);
   }
 
@@ -152,6 +158,8 @@ class _Conn {
         case 'snapshot':
           final data = await decryptEnv(msg['enc'], _key);
           agent.runs = (data['runs'] as List).cast<Map<String, dynamic>>();
+          final live = agent.runs.map((r) => r['id'] as String).toSet();
+          agent.tails.removeWhere((id, _) => !live.contains(id));  // 淘汰已消失任务的尾部
         case 'hb':
           agent.hb = await decryptEnv(msg['enc'], _key);
           agent.hbHistory.add(agent.hb!);
@@ -166,7 +174,11 @@ class _Conn {
             agent.eventKeys.add(key);
             data['received_at'] = DateTime.now().millisecondsSinceEpoch;
             agent.events.insert(0, data);
-            if (agent.events.length > 100) agent.events.removeLast();
+            if (agent.events.length > 100) {
+              final gone = agent.events.removeLast();
+              agent.eventKeys.remove(
+                  '${gone['title']}|${gone['body']}|${gone['run_id']}');
+            }
             if (msg['replay'] != true &&
                 appSettings.shouldNotify(data['type'] as String?)) {
               onNotice('${data['title']}\n${data['body']}');
@@ -235,6 +247,7 @@ class AppState extends ChangeNotifier {
   }
 
   void _attach(ServerLink link) {
+    _conns.remove(link.agentId)?.close();  // 重复配对:先关旧连接,避免孤儿 socket 常驻重连
     final agent = AgentState(link);
     agents[link.agentId] = agent;
     _conns[link.agentId] = _Conn(link, agent, notifyListeners, (n) {

@@ -1,5 +1,5 @@
 """交互式 pty shell:供 App 远程终端使用。输出经回调实时上报,输入写回 pty。
-默认关闭(config.enable_terminal),需服务器显式开启——等于开放远程 shell。"""
+默认信任已配对 App(config.enable_terminal),服务器可设 false 硬禁用。"""
 from __future__ import annotations
 
 import fcntl
@@ -86,7 +86,7 @@ class PtyShell:
             except ProcessLookupError:
                 pass
             try:
-                os.waitpid(self.pid, os.WNOHANG)
+                os.waitpid(self.pid, 0)  # SIGKILL 后立即返回,阻塞式确保收割,不留僵尸
             except ChildProcessError:
                 pass
             self.pid = None

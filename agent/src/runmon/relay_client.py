@@ -143,6 +143,7 @@ class Daemon:
         self.token = relay["device_token"]
         self._pty = None
         self._ws = None
+        self._sync_state = SyncState()  # 跨重连保留,避免重发全部历史事件
 
     def ws_url(self) -> str:
         u = self.url.replace("https://", "wss://").replace("http://", "ws://")
@@ -227,10 +228,13 @@ class Daemon:
             self._pty = None
 
     async def _sync_loop(self, ws) -> None:
-        state = SyncState()
+        state = self._sync_state
         last_hb = 0.0
         while True:
-            msgs = await asyncio.to_thread(compute_sync_messages, self.store, state, self.key)
+            try:  # L6: sqlite 瞬时锁等错误不该炸掉整条连接
+                msgs = await asyncio.to_thread(compute_sync_messages, self.store, state, self.key)
+            except Exception:
+                msgs = []
             for m in msgs:
                 await ws.send(json.dumps(m))
             if time.time() - last_hb >= HEARTBEAT_INTERVAL:
