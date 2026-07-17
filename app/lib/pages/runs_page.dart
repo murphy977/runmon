@@ -28,11 +28,10 @@ class RunsPage extends StatelessWidget {
             const SizedBox(width: 8),
           ]),
           body: Column(children: [
-            if (agent.hbHistory.length >= 2 &&
-                ((agent.hb?['gpus'] as List?) ?? []).isNotEmpty)
+            if (agent.hbHistory.length >= 2)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                child: _GpuHistoryCard(agent: agent),
+                child: _MetricsHistoryCard(agent: agent),
               ),
             Expanded(child: _runList(agent)),
           ]),
@@ -75,40 +74,51 @@ class RunsPage extends StatelessWidget {
   }
 }
 
-class _GpuHistoryCard extends StatelessWidget {
+/// 资源历史曲线:CPU + 内存(人人都有)+ 每张 GPU(有 N 卡才显示)。
+class _MetricsHistoryCard extends StatelessWidget {
   final AgentState agent;
-  const _GpuHistoryCard({required this.agent});
+  const _MetricsHistoryCard({required this.agent});
+
+  Widget _metric(String label, Color color, List<double> values, String now) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(children: [
+        SizedBox(width: 52,
+            child: Text(label, style: mono(size: 11.5, color: Rm.inkFaint))),
+        Expanded(child: Sparkline(values: values, color: color, height: 34)),
+        const SizedBox(width: 10),
+        SizedBox(width: 44,
+            child: Text(now, textAlign: TextAlign.right,
+                style: mono(size: 12, weight: FontWeight.w600, color: Rm.ink))),
+      ]),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final h = agent.hbHistory;
     final gpus = (agent.hb?['gpus'] as List?) ?? [];
+    final cpuNow = (agent.hb?['cpu'] as num?)?.round() ?? 0;
+    final memNow = (agent.hb?['mem'] as num?)?.round() ?? 0;
     return RmCard(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 6),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('GPU 利用率 · 最近 ${(agent.hbHistory.length * 10 / 60).round()} 分钟',
+        Text('资源 · 最近 ${(h.length * 10 / 60).round()} 分钟',
             style: mono(size: 11, color: Rm.inkFaint)),
-        const SizedBox(height: 10),
-        for (final g in gpus) ...[
-          Row(children: [
-            SizedBox(width: 52,
-                child: Text('GPU ${g['index']}',
-                    style: mono(size: 11.5, color: Rm.inkFaint))),
-            Expanded(
-              child: Sparkline(values: [
-                for (final h in agent.hbHistory)
-                  (((h['gpus'] as List?) ?? [])
-                          .cast<Map<String, dynamic>>()
-                          .where((x) => x['index'] == g['index'])
-                          .firstOrNull?['util'] as num? ?? 0)
-                      .toDouble(),
-              ]),
-            ),
-            const SizedBox(width: 10),
-            Text('${g['util']}%',
-                style: mono(size: 12, weight: FontWeight.w600, color: Rm.ink)),
-          ]),
-          const SizedBox(height: 6),
-        ],
+        const SizedBox(height: 12),
+        _metric('CPU', Rm.cyan,
+            [for (final x in h) (x['cpu'] as num? ?? 0).toDouble()], '$cpuNow%'),
+        _metric('内存', Rm.mint,
+            [for (final x in h) (x['mem'] as num? ?? 0).toDouble()], '$memNow%'),
+        for (final g in gpus)
+          _metric('GPU ${g['index']}', Rm.pear, [
+            for (final x in h)
+              (((x['gpus'] as List?) ?? [])
+                      .cast<Map<String, dynamic>>()
+                      .where((y) => y['index'] == g['index'])
+                      .firstOrNull?['util'] as num? ?? 0)
+                  .toDouble(),
+          ], '${g['util']}%'),
       ]),
     );
   }
