@@ -16,15 +16,16 @@ flutter build apk --release --split-per-abi
 echo "==> 构建万能版…"
 flutter build apk --release
 
-echo "==> 重命名成人看得懂的名字…"
+echo "==> 重命名…"
 D=build/app/outputs/flutter-apk
-cp "$D/app-arm64-v8a-release.apk"   "$D/RunMon-arm64.apk"        # 现代手机,装这个
-cp "$D/app-armeabi-v7a-release.apk" "$D/RunMon-arm32-老手机.apk"
-cp "$D/app-x86_64-release.apk"      "$D/RunMon-x86-模拟器.apk"
-cp "$D/app-release.apk"             "$D/RunMon-通用版.apk"
+cp "$D/app-arm64-v8a-release.apk"   "$D/RunMon-arm64.apk"   # 现代手机,装这个
+cp "$D/app-armeabi-v7a-release.apk" "$D/RunMon-arm32.apk"   # 老 32 位手机
+cp "$D/app-x86_64-release.apk"      "$D/RunMon-x86.apk"     # 电脑模拟器
+cp "$D/app-release.apk"             "$D/RunMon.apk"         # 通用版(装任何机器)
 
 echo ""
 echo "==> 完成,可以发出去的 APK:"
-ls -lh "$D"/RunMon-*.apk | awk '{print "   " $5 "  " $9}'
+ls -lh "$D"/RunMon.apk "$D"/RunMon-arm64.apk "$D"/RunMon-arm32.apk "$D"/RunMon-x86.apk \
+  | awk '{print "   " $5 "  " $9}'
 echo ""
 echo "日常手机装:RunMon-arm64.apk(现代安卓都是 arm64)"
