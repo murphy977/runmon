@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
 import time
+import urllib.parse
 import urllib.request
 
 from .events import Event
@@ -78,6 +80,31 @@ class TelegramChannel:
               json.dumps(payload).encode(), _json_headers())
 
 
+class ServerChanChannel:
+    """Server酱(方糖):把通知推到个人微信。用户在 sct.ftqq.com 拿 SendKey。"""
+    name = "serverchan"
+
+    def __init__(self, cfg: dict) -> None:
+        self.key = cfg["key"]
+
+    @property
+    def ident(self) -> str:
+        return f"serverchan:{self.key}"
+
+    def _endpoint(self) -> str:
+        # Server酱³ 的 key 形如 sctp{数字}t{随机},走各自的独立域名;
+        # 老版 Turbo(SCT... key)统一走 sctapi.ftqq.com。
+        m = re.match(r"sctp(\d+)t", self.key)
+        if m:
+            return f"https://{m.group(1)}.push.ft07.com/send/{self.key}.send"
+        return f"https://sctapi.ftqq.com/{self.key}.send"
+
+    def send(self, ev: Event) -> None:
+        # Server酱 的 title 上限 32 字;正文放 desp(支持 markdown)。表单编码兼容 Turbo 与 ³。
+        body = urllib.parse.urlencode({"title": ev.title[:32], "desp": ev.body}).encode()
+        _post(self._endpoint(), body, {"Content-Type": "application/x-www-form-urlencoded"})
+
+
 class WebhookChannel:
     name = "webhook"
 
@@ -98,6 +125,7 @@ CHANNEL_TYPES: dict[str, type] = {
     "ntfy": NtfyChannel,
     "bark": BarkChannel,
     "telegram": TelegramChannel,
+    "serverchan": ServerChanChannel,
     "webhook": WebhookChannel,
 }
 
