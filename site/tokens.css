@@ -1,0 +1,21 @@
+/* RunMon · Hallmark 设计系统 tokens (Hum 主题) —— 可移植副本;index.html 内联同一套值 */
+:root{
+  /* paper */
+  --paper:#F7F5EC; --paper2:#EFEDE1; --card:#FEFDFA; --hairline:#DEDBD0;
+  /* ink */
+  --ink:#141A1E; --ink-soft:#4E555B; --ink-faint:#868A8F;
+  /* accents (multi) */
+  --pear:#F6CE00; --pear-deep:#B49600; --pear-tint:#FBF0C4;
+  --cyan:#009FEF; --cyan-deep:#0072AD; --cyan-tint:#DDEFFB;
+  --coral:#FF3A5D; --coral-deep:#C42542; --coral-tint:#FCE4E6;
+  --mint:#3FB56A; --mint-deep:#237E45; --mint-tint:#DBF0E1;
+  --lav:#8A54D6; --lav-tint:#EBE1FA;
+  /* terminal surface */
+  --term-bg:#161C22; --term-fg:#E4E0D2;
+  /* type */
+  --sans:'Jakarta',-apple-system,system-ui,sans-serif;
+  --mono:'JBMono',ui-monospace,monospace;
+  /* shape + motion */
+  --r-card:22px; --r-pill:999px;
+  --e-spring:cubic-bezier(.34,1.4,.5,1); --e-snap:cubic-bezier(.2,.7,.3,1);
+}
