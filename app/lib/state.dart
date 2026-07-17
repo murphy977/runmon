@@ -71,6 +71,7 @@ class AgentState {
   List<Map<String, dynamic>> runs = [];
   final Map<String, String> tails = {};
   final List<Map<String, dynamic>> events = [];
+  final Set<String> eventKeys = {};  // 去重:防重放导致的重复通知
 
   AgentState(this.link);
 
@@ -107,7 +108,7 @@ class _Conn {
       final ch = IOWebSocketChannel.connect(Uri.parse(_wsUrl), headers: {
         'Authorization': 'Bearer ${link.appToken}',
         'X-Device': link.appDeviceId,
-      });
+      }, pingInterval: const Duration(seconds: 25));
       _ch = ch;
       // 真正完成握手后才算已连接(之前过早标记,UI 会误显示"服务器离线")
       ch.ready.then((_) {
@@ -159,12 +160,18 @@ class _Conn {
           agent.tails[data['run_id'] as String] = data['tail'] as String;
         case 'event':
           final data = await decryptEnv(msg['enc'], _key);
-          data['received_at'] = DateTime.now().millisecondsSinceEpoch;
-          agent.events.insert(0, data);
-          if (agent.events.length > 100) agent.events.removeLast();
-          onNotice('${data['title']}\n${data['body']}');
-          showEventNotification(data['title'] as String? ?? 'RunMon',
-              data['body'] as String? ?? '');
+          final key = '${data['title']}|${data['body']}|${data['run_id']}';
+          if (!agent.eventKeys.contains(key)) {
+            agent.eventKeys.add(key);
+            data['received_at'] = DateTime.now().millisecondsSinceEpoch;
+            agent.events.insert(0, data);
+            if (agent.events.length > 100) agent.events.removeLast();
+            if (msg['replay'] != true) {  // 只有实时事件才弹,重放的只进历史
+              onNotice('${data['title']}\n${data['body']}');
+              showEventNotification(data['title'] as String? ?? 'RunMon',
+                  data['body'] as String? ?? '');
+            }
+          }
         case 'term_output':
           final data = await decryptEnv(msg['enc'], _key);
           termSink?.call(data['data'] as String? ?? '');

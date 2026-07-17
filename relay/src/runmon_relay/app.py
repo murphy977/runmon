@@ -59,6 +59,7 @@ class ConnectionManager:
                         + self.store.events_for(agent_id)):
                 msg = json.loads(raw)
                 msg["agent"] = agent_id
+                msg["replay"] = True  # 重连补发的历史,App 据此不重复弹通知
                 await self._safe_send(ws, json.dumps(msg, ensure_ascii=False))
 
 

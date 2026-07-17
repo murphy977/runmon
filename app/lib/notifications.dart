@@ -26,7 +26,8 @@ Future<void> showEventNotification(String title, String body) async {
     const details = NotificationDetails(
       android: AndroidNotificationDetails('events', '任务事件',
           channelDescription: '服务器任务事件(完成/失败/假死等)',
-          importance: Importance.high, priority: Priority.high),
+          importance: Importance.high, priority: Priority.high,
+          autoCancel: true, ongoing: false),
       macOS: DarwinNotificationDetails(),
       iOS: DarwinNotificationDetails(),
     );
