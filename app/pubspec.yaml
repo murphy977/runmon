@@ -15,6 +15,7 @@ dependencies:
   http: ^1.2.0
   flutter_local_notifications: ^19.0.0
   mobile_scanner: ^7.0.0
+  xterm: ^4.0.0
 
 dev_dependencies:
   flutter_test:

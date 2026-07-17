@@ -86,6 +86,7 @@ class _Conn {
   double _backoff = 1;
   late final List<int> _key = keyFromB64(link.keyB64);
   final Map<String, Completer<Map<String, dynamic>>> _pending = {};
+  void Function(String)? termSink;
   final AgentState agent;
 
   _Conn(this.link, this.agent, this.onChange, this.onNotice) {
@@ -164,6 +165,9 @@ class _Conn {
           onNotice('${data['title']}\n${data['body']}');
           showEventNotification(data['title'] as String? ?? 'RunMon',
               data['body'] as String? ?? '');
+        case 'term_output':
+          final data = await decryptEnv(msg['enc'], _key);
+          termSink?.call(data['data'] as String? ?? '');
         case 'cmd_result':
           final data = await decryptEnv(msg['enc'], _key);
           _pending.remove(msg['cmd_id'])?.complete(data);
@@ -190,6 +194,14 @@ class _Conn {
       _pending.remove(cmdId);
       return {'ok': false, 'error': '超时(服务器可能离线,指令已暂存 5 分钟)'};
     });
+  }
+
+  Future<void> sendTerm(String type, [Map<String, dynamic>? payload]) async {
+    final ch = _ch;
+    if (ch == null) return;
+    final m = <String, dynamic>{'t': type, 'agent': link.agentId};
+    if (payload != null) m['enc'] = await encryptEnv(payload, _key);
+    ch.sink.add(jsonEncode(m));
   }
 
   void close() {
@@ -270,6 +282,27 @@ class AppState extends ChangeNotifier {
           [Map<String, dynamic>? args]) =>
       _conns[agentId]?.sendCmd(op, runId, args) ??
       Future.value({'ok': false, 'error': '连接不存在'});
+
+  Future<void> openTerminal(String agentId, void Function(String) onData,
+      {int rows = 24, int cols = 80}) async {
+    final c = _conns[agentId];
+    if (c == null) return;
+    c.termSink = onData;
+    await c.sendTerm('term_open', {'rows': rows, 'cols': cols});
+  }
+
+  Future<void> termInput(String agentId, String data) =>
+      _conns[agentId]?.sendTerm('term_input', {'data': data}) ?? Future.value();
+
+  Future<void> termResize(String agentId, int rows, int cols) =>
+      _conns[agentId]?.sendTerm('term_resize', {'rows': rows, 'cols': cols}) ??
+      Future.value();
+
+  void closeTerminal(String agentId) {
+    final c = _conns[agentId];
+    c?.sendTerm('term_close');
+    c?.termSink = null;
+  }
 }
 
 final appState = AppState();

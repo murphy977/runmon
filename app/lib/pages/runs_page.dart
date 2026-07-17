@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../state.dart';
 import '../ui.dart';
 import 'run_detail_page.dart';
+import 'terminal_page.dart';
 
 class RunsPage extends StatelessWidget {
   final String agentId;
@@ -16,7 +17,18 @@ class RunsPage extends StatelessWidget {
         final agent = appState.agents[agentId];
         if (agent == null) return const Scaffold(body: SizedBox());
         return Scaffold(
-          appBar: AppBar(title: Text(agent.name)),
+          appBar: AppBar(title: Text(agent.name), actions: [
+            IconButton(
+              tooltip: '终端',
+              icon: const Icon(Icons.terminal_rounded),
+              onPressed: agent.online
+                  ? () => Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => TerminalPage(
+                          agentId: agentId, agentName: agent.name)))
+                  : null,
+            ),
+            const SizedBox(width: 8),
+          ]),
           body: Column(children: [
             if (agent.hbHistory.length >= 2 &&
                 ((agent.hb?['gpus'] as List?) ?? []).isNotEmpty)
