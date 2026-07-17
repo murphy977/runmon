@@ -89,22 +89,40 @@ class _Conn {
     _connect();
   }
 
-  String get _wsUrl => '${link.relayUrl.replaceFirst('https://', 'wss://')
-      .replaceFirst('http://', 'ws://')}/ws/app';
+  // 端口必须显式写:Dart 的 Uri 不认识 ws:// 的默认端口,缺省会变成 0
+  String get _wsUrl {
+    final u = Uri.parse(link.relayUrl);
+    final secure = u.scheme == 'https';
+    final port = u.hasPort ? u.port : (secure ? 443 : 80);
+    return '${secure ? 'wss' : 'ws'}://${u.host}:$port/ws/app';
+  }
 
   void _connect() {
     if (_closed) return;
     try {
-      _ch = IOWebSocketChannel.connect(Uri.parse(_wsUrl), headers: {
+      final ch = IOWebSocketChannel.connect(Uri.parse(_wsUrl), headers: {
         'Authorization': 'Bearer ${link.appToken}',
         'X-Device': link.appDeviceId,
       });
-      _ch!.stream.listen(_onData, onDone: _scheduleReconnect,
-          onError: (_) => _scheduleReconnect());
-      agent.connected = true;
-      _backoff = 1;
-      onChange();
-    } catch (_) {
+      _ch = ch;
+      // 真正完成握手后才算已连接(之前过早标记,UI 会误显示"服务器离线")
+      ch.ready.then((_) {
+        if (_closed || _ch != ch) return;
+        agent.connected = true;
+        _backoff = 1;
+        onChange();
+      }).catchError((e) {
+        debugPrint('[runmon] ws 握手失败: $e');
+      });
+      ch.stream.listen(_onData, onDone: () {
+        debugPrint('[runmon] ws 断开 code=${ch.closeCode} reason=${ch.closeReason}');
+        _scheduleReconnect();
+      }, onError: (e) {
+        debugPrint('[runmon] ws 错误: $e');
+        _scheduleReconnect();
+      });
+    } catch (e) {
+      debugPrint('[runmon] ws 连接异常: $e');
       _scheduleReconnect();
     }
   }
