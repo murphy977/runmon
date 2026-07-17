@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:xterm/xterm.dart';
 
 import '../state.dart';
+import '../settings.dart';
 import '../ui.dart';
 
 class TerminalPage extends StatefulWidget {
@@ -53,7 +54,8 @@ class _TerminalPageState extends State<TerminalPage> {
                     widget.agentId, widget.presetCommand!)),
           Expanded(child: TerminalView(
           terminal,
-          textStyle: const TerminalStyle(fontSize: 13, fontFamily: Rm.mono),
+          textStyle: TerminalStyle(
+              fontSize: appSettings.terminalFontSize, fontFamily: Rm.mono),
           theme: TerminalThemes.defaultTheme,
           autofocus: true,
         )),

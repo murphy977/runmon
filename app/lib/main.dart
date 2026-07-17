@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'notifications.dart';
 import 'pages/events_page.dart';
 import 'pages/pair_page.dart';
+import 'pages/settings_page.dart';
 import 'pages/runs_page.dart';
+import 'settings.dart';
 import 'state.dart';
 import 'ui.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   appState.init();
+  appSettings.load();
   initNotifications();
   runApp(const RunMonApp());
 }
@@ -71,7 +74,13 @@ class _HomePageState extends State<HomePage> {
                 onPressed: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const EventsPage())),
               ),
-              const SizedBox(width: 8),
+              IconButton(
+                tooltip: '设置',
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const SettingsPage())),
+              ),
+              const SizedBox(width: 4),
             ],
           ),
           floatingActionButton: Padding(
@@ -185,8 +194,12 @@ class _ServerCard extends StatelessWidget {
           ],
           if (hb != null) ...[
             SizedBox(height: gpus.isEmpty ? 14 : 4),
-            Text('CPU ${hb['cpu']}%   内存 ${hb['mem']}%',
-                style: mono(size: 11.5, color: Rm.inkFaint)),
+            Text([
+              if (gpus.isNotEmpty)
+                'GPU ${gpus.map((g) => '${g['util']}%').join('/')}',
+              'CPU ${hb['cpu']}%',
+              '内存 ${hb['mem']}%',
+            ].join('   ·   '), style: mono(size: 11.5, color: Rm.inkFaint)),
           ],
         ],
       ),

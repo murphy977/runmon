@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/io.dart';
 
 import 'notifications.dart';
+import 'settings.dart';
 
 final _chacha = Chacha20.poly1305Aead();
 
@@ -166,7 +167,8 @@ class _Conn {
             data['received_at'] = DateTime.now().millisecondsSinceEpoch;
             agent.events.insert(0, data);
             if (agent.events.length > 100) agent.events.removeLast();
-            if (msg['replay'] != true) {  // 只有实时事件才弹,重放的只进历史
+            if (msg['replay'] != true &&
+                appSettings.shouldNotify(data['type'] as String?)) {
               onNotice('${data['title']}\n${data['body']}');
               showEventNotification(data['title'] as String? ?? 'RunMon',
                   data['body'] as String? ?? '');
