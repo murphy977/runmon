@@ -125,6 +125,8 @@ def create_app(db_path: Path | str) -> FastAPI:
                     store.save_tail(device, str(msg.get("run", "")), raw)
                 elif t == "event":
                     store.add_event(device, raw)
+                elif t in ("term_output",):
+                    pass  # 交互终端输出:实时转发,不落库
                 elif t != "cmd_result":
                     continue
                 msg["agent"] = device
@@ -152,7 +154,9 @@ def create_app(db_path: Path | str) -> FastAPI:
                     msg = json.loads(raw)
                 except json.JSONDecodeError:
                     continue
-                if msg.get("t") != "cmd":
+                t = msg.get("t")
+                if t not in ("cmd", "term_open", "term_input",
+                             "term_resize", "term_close"):
                     continue
                 agent_id = msg.get("agent", "")
                 if agent_id not in store.agents_for_app(device):
@@ -160,8 +164,8 @@ def create_app(db_path: Path | str) -> FastAPI:
                 text = json.dumps(msg, ensure_ascii=False)
                 if agent_ws := mgr.agents.get(agent_id):
                     await mgr._safe_send(agent_ws, text)
-                else:
-                    store.queue_cmd(agent_id, text)
+                elif t == "cmd":
+                    store.queue_cmd(agent_id, text)  # 白名单指令离线暂存;终端实时消息丢弃
         except WebSocketDisconnect:
             pass
         finally:

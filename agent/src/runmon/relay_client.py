@@ -141,6 +141,8 @@ class Daemon:
         self.url = relay["url"].rstrip("/")
         self.device_id = relay["device_id"]
         self.token = relay["device_token"]
+        self._pty = None
+        self._ws = None
 
     def ws_url(self) -> str:
         u = self.url.replace("https://", "wss://").replace("http://", "ws://")
@@ -158,6 +160,7 @@ class Daemon:
                                             "X-Device": self.device_id,
                                             "User-Agent": "runmon/0.1.0"}) as ws:
                     backoff = 1.0
+                    self._ws = ws
                     print(f"[mon daemon] 已连接 {self.url}")
                     await asyncio.gather(self._reader(ws), self._sync_loop(ws))
             except asyncio.CancelledError:
@@ -166,19 +169,61 @@ class Daemon:
                 print(f"[mon daemon] 连接断开:{exc};{backoff:.0f}s 后重连")
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, 60.0)
+            finally:
+                self._ws = None
+                self._close_pty()
 
     async def _reader(self, ws) -> None:
         async for raw in ws:
             try:
                 msg = json.loads(raw)
-                if msg.get("t") != "cmd":
-                    continue
-                cmd = decrypt(msg["enc"], self.key)
-                result = await asyncio.to_thread(handle_command, self.store, cmd)
-                await ws.send(json.dumps({"t": "cmd_result", "cmd_id": msg.get("cmd_id"),
-                                          "enc": encrypt(result, self.key)}))
+                t = msg.get("t")
+                if t == "cmd":
+                    cmd = decrypt(msg["enc"], self.key)
+                    result = await asyncio.to_thread(handle_command, self.store, cmd)
+                    await ws.send(json.dumps({"t": "cmd_result",
+                                              "cmd_id": msg.get("cmd_id"),
+                                              "enc": encrypt(result, self.key)}))
+                elif t and t.startswith("term_"):
+                    await self._handle_term(ws, t, msg)
             except Exception as exc:
                 print(f"[mon daemon] 指令处理失败:{exc}")
+
+    async def _handle_term(self, ws, t: str, msg: dict) -> None:
+        if t == "term_open":
+            if not self.config.enable_terminal:
+                await ws.send(json.dumps({"t": "term_output",
+                    "enc": encrypt({"data": "\r\n[RunMon] 交互终端未启用。"
+                        "在服务器 config.toml 设 enable_terminal = true 并重启 mon daemon。\r\n"},
+                        self.key)}))
+                return
+            from .terminal import PtyShell
+            self._close_pty()
+            payload = decrypt(msg["enc"], self.key) if "enc" in msg else {}
+            loop = asyncio.get_running_loop()
+
+            def on_output(data: str) -> None:
+                # pty 读线程在 loop 线程内(add_reader),可直接调度发送
+                asyncio.run_coroutine_threadsafe(
+                    ws.send(json.dumps({"t": "term_output",
+                                        "enc": encrypt({"data": data}, self.key)})),
+                    loop)
+
+            self._pty = PtyShell(on_output)
+            self._pty.open(loop, rows=int(payload.get("rows", 24)),
+                           cols=int(payload.get("cols", 80)))
+        elif t == "term_input" and self._pty and self._pty.alive:
+            self._pty.write(decrypt(msg["enc"], self.key).get("data", ""))
+        elif t == "term_resize" and self._pty and self._pty.alive:
+            p = decrypt(msg["enc"], self.key)
+            self._pty.resize(int(p.get("rows", 24)), int(p.get("cols", 80)))
+        elif t == "term_close":
+            self._close_pty()
+
+    def _close_pty(self) -> None:
+        if self._pty is not None:
+            self._pty.close()
+            self._pty = None
 
     async def _sync_loop(self, ws) -> None:
         state = SyncState()
