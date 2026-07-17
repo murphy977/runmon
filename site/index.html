@@ -85,12 +85,17 @@ h1{font-size:clamp(2.4rem,5.6vw,4.3rem);line-height:1.08;font-weight:700;
 .orbs{position:relative;height:440px}
 .orb{position:absolute;border-radius:50%}
 .orb.big{width:250px;height:250px;left:26%;top:24%;
-  background:radial-gradient(circle at 35% 30%,#FFC24B,var(--coral) 130%);
-  box-shadow:0 30px 60px -20px rgba(255,58,93,.45)}
-.orb.pear{width:80px;height:80px;left:2%;top:32%;background:var(--pear)}
-.orb.coral{width:66px;height:66px;right:6%;top:62%;background:var(--coral)}
-.orb.mint{width:46px;height:46px;left:16%;bottom:6%;background:var(--mint)}
-.pill-orb{position:absolute;right:0;top:40%;width:104px;height:56px;border-radius:999px;background:var(--cyan)}
+  background:radial-gradient(circle at 34% 28%,#FFCE5C,var(--coral) 128%);
+  box-shadow:0 44px 88px -30px rgba(255,58,93,.42),inset 0 -8px 24px rgba(189,31,61,.15)}
+.orb.pear{width:80px;height:80px;left:2%;top:32%;background:radial-gradient(circle at 36% 30%,#FFE04D,var(--pear));
+  box-shadow:0 14px 28px -8px rgba(246,206,0,.5)}
+.orb.coral{width:66px;height:66px;right:6%;top:62%;background:radial-gradient(circle at 36% 30%,#FF6B84,var(--coral));
+  box-shadow:0 14px 28px -8px rgba(255,58,93,.45)}
+.orb.mint{width:46px;height:46px;left:16%;bottom:6%;background:radial-gradient(circle at 36% 30%,#8BE8A3,var(--mint));
+  box-shadow:0 12px 24px -8px rgba(102,218,133,.5)}
+.pill-orb{position:absolute;right:0;top:40%;width:104px;height:56px;border-radius:999px;
+  background:radial-gradient(circle at 30% 30%,#33B6F5,var(--cyan));
+  box-shadow:0 14px 30px -8px rgba(0,159,239,.45)}
 .ring-orb{position:absolute;right:14%;top:4%;width:74px;height:74px;border-radius:50%;
   border:5px solid var(--lav)}
 .float{animation:float 6s ease-in-out infinite}
@@ -99,42 +104,47 @@ h1{font-size:clamp(2.4rem,5.6vw,4.3rem);line-height:1.08;font-weight:700;
 
 hr.thick{border:0;height:1px;background:var(--hairline);margin:0}
 
-/* 痛点 band */
-.pain{background:var(--coral-tint);padding:64px 0}
-.pain h2{font-size:clamp(1.5rem,3vw,2rem);font-weight:700;letter-spacing:-.02em;margin:14px 0 32px;max-width:20ch}
-.pain-rows{display:grid;gap:2px}
-.pain-row{display:flex;gap:16px;align-items:baseline;padding:16px 0;border-top:1px solid rgba(189,31,61,.18)}
-.pain-row .n{font-family:var(--mono);font-size:13px;color:var(--coral-deep);min-width:28px}
-.pain-row p{font-size:clamp(1.05rem,2vw,1.3rem);font-weight:500}
+/* 痛点 band — 深色,和浅色页面形成节奏 */
+.pain{background:var(--term-bg);padding:76px 0;color:var(--paper)}
+.eyebrow.dark{color:rgba(226,222,208,.55)}
+.pain h2{font-size:clamp(1.5rem,3vw,2rem);font-weight:700;letter-spacing:-.025em;margin:14px 0 36px;max-width:20ch;color:var(--paper)}
+.pain-rows{display:grid;gap:0}
+.pain-row{display:flex;gap:18px;align-items:baseline;padding:20px 0;border-top:1px solid rgba(255,255,255,.08)}
+.pain-row:first-child{border-top:0}
+.pain-row .n{font-family:var(--mono);font-size:13px;color:var(--pear);min-width:30px}
+.pain-row p{font-size:clamp(1.05rem,2vw,1.32rem);font-weight:500;color:#D9D5C9;line-height:1.5}
 
 /* 功能 bento */
-.features{padding:76px 0}
-.sec-head{text-align:center;margin-bottom:44px}
-.sec-head h2{font-size:clamp(1.8rem,3.4vw,2.5rem);font-weight:700;letter-spacing:-.025em;margin-top:12px}
+.features{padding:88px 0}
+.sec-head{text-align:center;margin-bottom:52px}
+.sec-head h2{font-size:clamp(1.8rem,3.4vw,2.5rem);font-weight:700;letter-spacing:-.03em;margin-top:14px}
 .sec-head .eyebrow{justify-content:center}
-.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
 .cell{background:var(--card);border:1px solid var(--hairline);border-radius:var(--r-card);
-  padding:26px;transition:transform .16s,box-shadow .16s,background .16s;position:relative;overflow:hidden}
-.cell:hover{transform:translateY(-4px);box-shadow:0 18px 40px -18px rgba(18,23,27,.16)}
-.cell .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
-  font-family:var(--mono);font-weight:500;font-size:15px;margin-bottom:16px}
-.cell h3{font-size:18px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}
-.cell p{font-size:14.5px;color:var(--ink-soft);line-height:1.6}
+  padding:28px;transition:transform .22s cubic-bezier(.2,.7,.3,1),box-shadow .22s,border-color .22s;
+  position:relative;box-shadow:0 1px 2px rgba(18,23,27,.03)}
+.cell:hover{transform:translateY(-3px);border-color:#C9C6BB;
+  box-shadow:0 1px 2px rgba(18,23,27,.04),0 22px 44px -20px rgba(18,23,27,.16)}
+.cell .ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;
+  margin-bottom:18px;background:var(--paper2)}
+.cell .ic svg{width:22px;height:22px;fill:none;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.cell h3{font-size:17.5px;font-weight:600;letter-spacing:-.015em;margin-bottom:9px}
+.cell p{font-size:14px;color:var(--ink-soft);line-height:1.62}
+.cell code{font-family:var(--mono);font-size:12.5px;background:var(--paper2);
+  padding:1px 5px;border-radius:5px;color:var(--ink)}
 .span3{grid-column:span 3}.span2{grid-column:span 2}
-.tint-pear{background:linear-gradient(180deg,var(--pear-tint),var(--card))}
-.tint-cyan{background:linear-gradient(180deg,var(--cyan-tint),var(--card))}
-.tint-mint{background:linear-gradient(180deg,var(--mint-tint),var(--card))}
-.tint-coral{background:linear-gradient(180deg,var(--coral-tint),var(--card))}
-.ic-pear{background:var(--pear);color:var(--ink)}
-.ic-cyan{background:var(--cyan-tint);color:var(--cyan-deep)}
-.ic-coral{background:var(--coral-tint);color:var(--coral-deep)}
-.ic-mint{background:var(--mint-tint);color:var(--mint-deep)}
-.ic-lav{background:#EFE0FF;color:#7A3FBF}
+.i-pear{background:var(--pear-tint)} .i-pear svg{stroke:var(--pear-deep)}
+.i-cyan{background:var(--cyan-tint)} .i-cyan svg{stroke:var(--cyan-deep)}
+.i-coral{background:var(--coral-tint)} .i-coral svg{stroke:var(--coral-deep)}
+.i-mint{background:var(--mint-tint)} .i-mint svg{stroke:var(--mint-deep)}
+.i-lav{background:#EFE0FF} .i-lav svg{stroke:#7A3FBF}
 
 /* 下载 */
 .download{background:var(--paper2);padding:76px 0}
 .dl-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;margin-top:40px}
-.dl-card{background:var(--card);border:1px solid var(--hairline);border-radius:var(--r-card);padding:30px}
+.dl-card{background:var(--card);border:1px solid var(--hairline);border-radius:var(--r-card);
+  padding:30px;box-shadow:0 1px 2px rgba(18,23,27,.03),0 14px 34px -22px rgba(18,23,27,.12)}
 .dl-card h3{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px;display:flex;align-items:center;gap:9px}
 .dl-card .sub{font-size:14px;color:var(--ink-soft);margin-bottom:22px}
 .dl-main{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
@@ -148,7 +158,7 @@ hr.thick{border:0;height:1px;background:var(--hairline);margin:0}
 .mini-note{font-size:12.5px;color:var(--ink-faint);font-family:var(--mono)}
 
 /* 页脚 */
-footer{padding:52px 0 60px}
+footer{padding:56px 0 64px;border-top:1px solid var(--hairline)}
 .foot{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
 .foot .big{font-size:clamp(1.4rem,3vw,2rem);font-weight:700;letter-spacing:-.02em;line-height:1.25;max-width:16ch}
 .foot .meta{font-family:var(--mono);font-size:12px;color:var(--ink-faint);text-align:right;line-height:1.9}
@@ -202,11 +212,9 @@ footer{padding:52px 0 60px}
   </div>
 </header>
 
-<hr class="thick">
-
 <section class="pain">
   <div class="wrap">
-    <div class="eyebrow">你是不是也这样</div>
+    <div class="eyebrow dark">你是不是也这样</div>
     <h2>跑一次训练,一整天心不在焉。</h2>
     <div class="pain-rows">
       <div class="pain-row"><span class="n">01</span><p>跑了几个小时,中途报错。GPU 已经空闲半天,你还不知道。</p></div>
@@ -223,38 +231,38 @@ footer{padding:52px 0 60px}
       <h2>装上就安心,该干嘛干嘛去。</h2>
     </div>
     <div class="bento">
-      <article class="cell span3 tint-pear">
-        <div class="ic ic-pear">!</div>
+      <article class="cell span3">
+        <div class="ic i-pear"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
         <h3>六类事件,挂了必达</h3>
         <p>完成、失败、报错输出、GPU 假死(进程活着却不干活)、日志静默、磁盘写满——任一发生,推到你手机。通道走 ntfy / Bark / Telegram,App 被系统杀了也收得到。</p>
       </article>
-      <article class="cell span3 tint-cyan">
-        <div class="ic ic-cyan">▮</div>
+      <article class="cell span3">
+        <div class="ic i-cyan"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.2"/><path d="M7 9.5l3 2.5-3 2.5"/><path d="M13 15h4"/></svg></div>
         <h3>实时终端流 + 进度</h3>
         <p>手机上看终端输出实时滚动,进度条、loss、ETA 从日志自动解析,不用改一行训练代码。</p>
       </article>
-      <article class="cell span2 tint-mint">
-        <div class="ic ic-mint">∿</div>
+      <article class="cell span2">
+        <div class="ic i-mint"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M6.5 14.5l3.5-4.5 3 2.5 4.5-6"/></svg></div>
         <h3>资源曲线</h3>
         <p>GPU 利用率、显存、CPU、内存,实时曲线一眼看穿。</p>
       </article>
       <article class="cell span2">
-        <div class="ic ic-coral">⏻</div>
+        <div class="ic i-coral"><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.4 7.4a8 8 0 1 0 11.2 0"/></svg></div>
         <h3>远程操作</h3>
         <p>停止、重跑、拉完整日志、跑完自动关机——租卡党省钱。</p>
       </article>
-      <article class="cell span2 tint-coral">
-        <div class="ic ic-lav">›_</div>
+      <article class="cell span2">
+        <div class="ic i-lav"><svg viewBox="0 0 24 24"><path d="M5 6l5 6-5 6"/><path d="M13 18h6"/></svg></div>
         <h3>完整交互终端</h3>
         <p>手机上开一个真终端,跑任意命令,和 SSH 一样。</p>
       </article>
       <article class="cell span3">
-        <div class="ic ic-mint">🔒</div>
+        <div class="ic i-cyan"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.8-3.4 7.9-7 9-3.6-1.1-7-4.2-7-9V6z"/><path d="M9 12l2 2 4-4.5"/></svg></div>
         <h3>端到端加密 · 自托管</h3>
         <p>你的训练日志和命令全程加密,中转服务器只见密文。中转服务自己部署,数据不经过任何第三方。</p>
       </article>
-      <article class="cell span3 tint-pear">
-        <div class="ic ic-pear">↹</div>
+      <article class="cell span3">
+        <div class="ic i-pear"><svg viewBox="0 0 24 24"><path d="M9.5 14.5l5-5"/><path d="M11 6.5l1.3-1.3a4 4 0 0 1 5.5 5.5L16.5 12"/><path d="M13 17.5l-1.3 1.3a4 4 0 0 1-5.5-5.5L7.5 12"/></svg></div>
         <h3>零侵入接入</h3>
         <p>新任务 <code>mon run -- python train.py</code> 包一层就行;已经在 tmux 里跑了十小时的任务,<code>mon attach</code> 直接接管。</p>
       </article>
