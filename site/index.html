@@ -53,6 +53,9 @@ nav{position:sticky;top:0;z-index:50;background:rgba(247,245,236,.82);
 .nav-links a:not(.pill){color:var(--ink-soft)}
 .nav-links a:not(.pill):hover{color:var(--ink)}
 .ver{font-family:var(--mono);font-size:12px;color:var(--ink-faint)}
+.gh{display:inline-flex;align-items:center;gap:7px;color:var(--ink-soft)}
+.gh:hover{color:var(--ink)}
+.gh svg{width:19px;height:19px;fill:currentColor;display:block}
 
 /* Hum push 按钮 */
 .push{display:inline-flex;align-items:center;gap:9px;font-family:var(--sans);
@@ -162,6 +165,8 @@ footer{padding:56px 0 64px;border-top:1px solid var(--hairline)}
 .foot{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
 .foot .big{font-size:clamp(1.4rem,3vw,2rem);font-weight:700;letter-spacing:-.02em;line-height:1.25;max-width:16ch}
 .foot .meta{font-family:var(--mono);font-size:12px;color:var(--ink-faint);text-align:right;line-height:1.9}
+.foot .meta .flink{color:var(--ink-soft);border-bottom:1px solid var(--hairline);transition:color .14s,border-color .14s}
+.foot .meta .flink:hover{color:var(--ink);border-bottom-color:currentColor}
 
 @media(max-width:860px){
   .hero{padding:36px 0 56px}
@@ -193,7 +198,10 @@ footer{padding:56px 0 64px;border-top:1px solid var(--hairline)}
     <div class="nav-links">
       <a href="#features" class="hide-sm">功能</a>
       <a href="#download" class="hide-sm">下载</a>
-      <span class="ver">v1.0</span>
+      <span class="ver hide-sm">v1.0</span>
+      <a href="https://github.com/murphy977/runmon" class="gh" target="_blank" rel="noopener" aria-label="GitHub 仓库">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+      </a>
       <a href="#download" class="push sm">下载 App</a>
     </div>
   </div>
@@ -313,8 +321,10 @@ footer{padding:56px 0 64px;border-top:1px solid var(--hairline)}
   <div class="wrap foot">
     <div class="big">别再守着终端了。<br>RunMon 替你盯着。</div>
     <div class="meta">
-      RunMon v1.0.0<br>
-      长任务陪伴器<br>
+      RunMon v1.0.0 · 长任务陪伴器<br>
+      <a href="https://github.com/murphy977/runmon" class="flink" target="_blank" rel="noopener">GitHub</a> ·
+      <a href="https://pypi.org/project/runmon/" class="flink" target="_blank" rel="noopener">PyPI</a> ·
+      <a href="https://github.com/murphy977/runmon/releases" class="flink" target="_blank" rel="noopener">Releases</a><br>
       MIT License · 2026
     </div>
   </div>

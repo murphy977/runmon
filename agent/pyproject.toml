@@ -19,6 +19,11 @@ dependencies = [
   "qrcode>=7.4",
 ]
 
+[project.urls]
+Homepage = "https://runmon.linxiexie.com"
+Source = "https://github.com/murphy977/runmon"
+Issues = "https://github.com/murphy977/runmon/issues"
+
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 
