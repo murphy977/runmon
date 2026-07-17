@@ -4,7 +4,7 @@
 
 > 跑了几个小时的训练中途报错,GPU 空闲半天没人知道;吃饭睡觉还惦记着 ssh 上去看一眼——RunMon 就是为了消灭这件事。
 
-`v1.0.0` · Python + Flutter · MIT · 端到端加密
+`v1.0.2` · Python + Flutter · MIT · 端到端加密
 
 ---
 
