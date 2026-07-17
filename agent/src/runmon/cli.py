@@ -237,6 +237,19 @@ def cmd_daemon(_args) -> int:
     return 0
 
 
+def cmd_attach(args) -> int:
+    import shutil
+    if not shutil.which("tmux"):
+        print("错误:未找到 tmux", file=sys.stderr)
+        return 1
+    from .attach import TmuxAttach
+    try:
+        return TmuxAttach(args.target, name=args.name).execute()
+    except Exception as exc:
+        print(f"接管失败:{exc}", file=sys.stderr)
+        return 1
+
+
 def cmd_demo(args) -> int:
     demo_args = [sys.executable, "-m", "runmon.demo_train"]
     if args.fail:
@@ -288,6 +301,11 @@ def main(argv: list[str] | None = None) -> int:
 
     p_daemon = sub.add_parser("daemon", help="常驻守护:同步状态到 relay 并接收指令")
     p_daemon.set_defaults(func=cmd_daemon)
+
+    p_attach = sub.add_parser("attach", help="接管已在 tmux 里跑的任务")
+    p_attach.add_argument("target", help="tmux 目标,如 会话名 / 会话:窗口.窗格")
+    p_attach.add_argument("--name", help="任务名(默认 tmux:<目标>)")
+    p_attach.set_defaults(func=cmd_attach)
 
     p_demo = sub.add_parser("demo", help="跑一个演示训练任务")
     p_demo.add_argument("--fail", action="store_true")
