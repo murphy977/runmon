@@ -11,6 +11,10 @@ from .config import Config, config_path
 from .events import format_duration
 from .store import RunStore
 
+# 未指定 --relay 时使用的公共体验中转:零配置即可上手。
+# 数据端到端加密,该中转只经手密文;认真使用建议自建 relay(见 README)。
+DEFAULT_RELAY = "https://mon.linxiexie.com"
+
 
 def _strip_dashdash(cmd: list[str]) -> list[str]:
     return cmd[1:] if cmd and cmd[0] == "--" else cmd
@@ -185,7 +189,10 @@ def cmd_pair(args) -> int:
     import socket
     from .crypto import generate_key, key_to_b64
 
-    url = args.relay.rstrip("/")
+    url = (args.relay or DEFAULT_RELAY).rstrip("/")
+    if not args.relay:
+        print(f"使用公共体验中转 {url}(端到端加密,仅转发密文)。")
+        print("生产环境建议自建:mon pair --relay https://你的relay地址\n")
     name = args.name or socket.gethostname()
     try:
         start = _relay_post(url, "/api/pair/start", {"device_name": name})
@@ -334,7 +341,8 @@ def main(argv: list[str] | None = None) -> int:
     p_init.set_defaults(func=cmd_init)
 
     p_pair = sub.add_parser("pair", help="与手机 App 配对(经 relay)")
-    p_pair.add_argument("--relay", required=True, help="relay 地址,如 https://mon.example.com")
+    p_pair.add_argument("--relay", default=None,
+                        help="relay 地址,如 https://mon.example.com;不填则用公共体验中转")
     p_pair.add_argument("--name", help="本机显示名(默认 hostname)")
     p_pair.add_argument("--no-wait", action="store_true", help="不等待手机认领")
     p_pair.set_defaults(func=cmd_pair)

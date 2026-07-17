@@ -23,7 +23,7 @@
 **1. 服务器上装 agent、配对、跑任务**
 ```bash
 pip install runmon
-mon pair --relay https://你的relay地址   # 打印二维码
+mon pair                    # 打印二维码;默认用公共体验中转,生产可 --relay 自建
 mon run -- python train.py  # 你原本的命令,前面包一层
 ```
 
