@@ -331,3 +331,48 @@ class SectionLabel extends StatelessWidget {
             style: mono(size: 11, color: Rm.inkFaint, weight: FontWeight.w500)),
       );
 }
+
+
+/// 迷你曲线(GPU 利用率历史,0~100)。
+class Sparkline extends StatelessWidget {
+  final List<double> values;
+  final Color color;
+  final double height;
+  const Sparkline({super.key, required this.values, this.color = Rm.pear,
+      this.height = 40});
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+      height: height, width: double.infinity,
+      child: CustomPaint(painter: _SparkPainter(values, color)));
+}
+
+class _SparkPainter extends CustomPainter {
+  final List<double> v;
+  final Color color;
+  _SparkPainter(this.v, this.color);
+
+  @override
+  void paint(Canvas c, Size s) {
+    if (v.length < 2) return;
+    final path = Path();
+    for (var i = 0; i < v.length; i++) {
+      final x = i / (v.length - 1) * s.width;
+      final y = s.height - (v[i].clamp(0, 100) / 100) * (s.height - 3) - 1.5;
+      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
+    }
+    final fill = Path.from(path)
+      ..lineTo(s.width, s.height)
+      ..lineTo(0, s.height)
+      ..close();
+    c.drawPath(fill, Paint()..color = color.withValues(alpha: 0.13));
+    c.drawPath(path, Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparkPainter old) => old.v != v;
+}

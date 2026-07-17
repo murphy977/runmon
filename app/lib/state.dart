@@ -67,6 +67,7 @@ class AgentState {
   bool online = false;
   bool connected = false; // 与 relay 的连接状态
   Map<String, dynamic>? hb;
+  final List<Map<String, dynamic>> hbHistory = [];
   List<Map<String, dynamic>> runs = [];
   final Map<String, String> tails = {};
   final List<Map<String, dynamic>> events = [];
@@ -150,6 +151,8 @@ class _Conn {
           agent.runs = (data['runs'] as List).cast<Map<String, dynamic>>();
         case 'hb':
           agent.hb = await decryptEnv(msg['enc'], _key);
+          agent.hbHistory.add(agent.hb!);
+          if (agent.hbHistory.length > 180) agent.hbHistory.removeAt(0);
         case 'tail':
           final data = await decryptEnv(msg['enc'], _key);
           agent.tails[data['run_id'] as String] = data['tail'] as String;

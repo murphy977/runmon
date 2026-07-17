@@ -6,6 +6,7 @@ import pty
 import select
 import shlex
 import signal
+import subprocess
 import sys
 import termios
 import threading
@@ -81,6 +82,13 @@ class RunWrapper:
             self.notifier.stop()
         except Exception:
             pass
+        try:
+            final = self.store.get_run(self.run.id)
+            if final is not None and final.shutdown_after:
+                print("\n[mon] 任务结束,按设置执行自动关机…", flush=True)
+                subprocess.run(shlex.split(self.config.shutdown_command), timeout=30)
+        except Exception as exc:
+            print(f"[mon] 自动关机失败:{exc}", flush=True)
         return exit_code
 
     def _pump(self, master: int, log_path) -> int:

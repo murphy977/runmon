@@ -27,7 +27,8 @@ def run_snapshot(store: RunStore) -> list[dict]:
     return [{"id": r.id, "name": r.name, "status": r.status, "progress": r.progress,
              "eta_seconds": r.eta_seconds, "last_loss": r.last_loss,
              "started_at": r.started_at, "ended_at": r.ended_at,
-             "exit_code": r.exit_code, "muted_until": r.muted_until}
+             "exit_code": r.exit_code, "muted_until": r.muted_until,
+             "shutdown_after": r.shutdown_after}
             for r in store.list_runs(limit=50)]
 
 
@@ -116,6 +117,12 @@ def handle_command(store: RunStore, cmd: dict) -> dict:
         until = time.time() + hours * 3600 if hours > 0 else PERMANENT_MUTE
         store.update_run(run.id, muted_until=until)
         return {"ok": True, "op": op, "run_id": run.id, "muted_until": until}
+    if op == "shutdown_after":
+        if run is None:
+            return {"ok": False, "op": op, "error": "run not found"}
+        enabled = 1 if args.get("enabled") else 0
+        store.update_run(run.id, shutdown_after=enabled)
+        return {"ok": True, "op": op, "run_id": run.id, "shutdown_after": enabled}
     if op == "rerun":
         if run is None:
             return {"ok": False, "op": op, "error": "run not found"}

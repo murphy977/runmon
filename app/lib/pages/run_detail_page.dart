@@ -93,6 +93,7 @@ class _RunDetailPageState extends State<RunDetailPage> {
         final status = run['status'] as String? ?? '?';
         final progress = run['progress'] as num?;
         final running = status == 'running';
+        final shutdownAfter = run['shutdown_after'] == 1;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scroll.hasClients) {
             _scroll.jumpTo(_scroll.position.maxScrollExtent);
@@ -190,6 +191,19 @@ class _RunDetailPageState extends State<RunDetailPage> {
                     SoftButton(
                       label: '静音 8 小时', icon: Icons.notifications_paused_outlined,
                       onPressed: _busy ? null : () => _cmd('mute', {'hours': 8}),
+                    ),
+                    SoftButton(
+                      label: shutdownAfter ? '跑完关机 ✓' : '跑完关机',
+                      icon: Icons.power_settings_new_rounded,
+                      deep: shutdownAfter ? Rm.coralDeep : Rm.inkSoft,
+                      tint: shutdownAfter ? Rm.coralTint : Rm.paper2,
+                      onPressed: _busy || !running
+                          ? null
+                          : () => _cmd('shutdown_after',
+                              {'enabled': !shutdownAfter},
+                              shutdownAfter
+                                  ? null
+                                  : '任务跑完后自动关机?\n服务器需允许免密 sudo shutdown。'),
                     ),
                     SoftButton(
                       label: '完整日志', icon: Icons.article_outlined,

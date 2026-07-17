@@ -87,3 +87,13 @@ def test_handle_stop(store):
 
 def test_handle_unknown(store):
     assert handle_command(store, {"op": "format_disk"})["ok"] is False
+
+
+def test_handle_shutdown_after(store):
+    run = store.create_run(name="a", command="c", cwd="", log_path="")
+    res = handle_command(store, {"op": "shutdown_after", "run_id": run.id,
+                                 "args": {"enabled": True}})
+    assert res["ok"] is True and store.get_run(run.id).shutdown_after == 1
+    handle_command(store, {"op": "shutdown_after", "run_id": run.id,
+                           "args": {"enabled": False}})
+    assert store.get_run(run.id).shutdown_after == 0

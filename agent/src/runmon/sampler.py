@@ -76,6 +76,8 @@ def process_tree(root_pid: int) -> set[int]:
 def disk_usage() -> list[tuple[str, float]]:
     out: list[tuple[str, float]] = []
     for part in psutil.disk_partitions(all=False):
+        if "ro" in part.opts.split(","):
+            continue  # 只读卷(macOS 封印卷/模拟器镜像)天然近满,非用户磁盘
         try:
             out.append((part.mountpoint, psutil.disk_usage(part.mountpoint).percent))
         except OSError:

@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS runs (
   eta_seconds INTEGER,
   last_loss REAL,
   gpu_indices TEXT NOT NULL DEFAULT '',
-  muted_until REAL
+  muted_until REAL,
+  shutdown_after INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,7 +52,7 @@ CREATE TABLE IF NOT EXISTS outbox (
 _RUN_COLUMNS = (
     "id", "name", "command", "cwd", "pid", "status", "exit_code", "started_at",
     "ended_at", "updated_at", "last_output_at", "output_tail", "output_length",
-    "log_path", "progress", "eta_seconds", "last_loss", "gpu_indices", "muted_until",
+    "log_path", "progress", "eta_seconds", "last_loss", "gpu_indices", "muted_until", "shutdown_after",
 )
 
 
@@ -76,6 +77,7 @@ class RunRecord:
     last_loss: float | None
     gpu_indices: str
     muted_until: float | None
+    shutdown_after: int
 
 
 class RunStore:
@@ -95,6 +97,8 @@ class RunStore:
         run_cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(runs)")}
         if "muted_until" not in run_cols:
             self._conn.execute("ALTER TABLE runs ADD COLUMN muted_until REAL")
+        if "shutdown_after" not in run_cols:
+            self._conn.execute("ALTER TABLE runs ADD COLUMN shutdown_after INTEGER NOT NULL DEFAULT 0")
         event_cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(events)")}
         if "payload" not in event_cols:
             self._conn.execute("ALTER TABLE events ADD COLUMN payload TEXT")

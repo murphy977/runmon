@@ -17,7 +17,22 @@ class RunsPage extends StatelessWidget {
         if (agent == null) return const Scaffold(body: SizedBox());
         return Scaffold(
           appBar: AppBar(title: Text(agent.name)),
-          body: agent.runs.isEmpty
+          body: Column(children: [
+            if (agent.hbHistory.length >= 2 &&
+                ((agent.hb?['gpus'] as List?) ?? []).isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: _GpuHistoryCard(agent: agent),
+              ),
+            Expanded(child: _runList(agent)),
+          ]),
+        );
+      },
+    );
+  }
+
+  Widget _runList(AgentState agent) {
+    return agent.runs.isEmpty
               ? Center(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     Text('还没有任务',
@@ -46,9 +61,45 @@ class RunsPage extends StatelessWidget {
                       child: _RunCard(agentId: agentId, run: r),
                     );
                   },
-                ),
-        );
-      },
+                );
+  }
+}
+
+class _GpuHistoryCard extends StatelessWidget {
+  final AgentState agent;
+  const _GpuHistoryCard({required this.agent});
+
+  @override
+  Widget build(BuildContext context) {
+    final gpus = (agent.hb?['gpus'] as List?) ?? [];
+    return RmCard(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('GPU 利用率 · 最近 ${(agent.hbHistory.length * 10 / 60).round()} 分钟',
+            style: mono(size: 11, color: Rm.inkFaint)),
+        const SizedBox(height: 10),
+        for (final g in gpus) ...[
+          Row(children: [
+            SizedBox(width: 52,
+                child: Text('GPU ${g['index']}',
+                    style: mono(size: 11.5, color: Rm.inkFaint))),
+            Expanded(
+              child: Sparkline(values: [
+                for (final h in agent.hbHistory)
+                  (((h['gpus'] as List?) ?? [])
+                          .cast<Map<String, dynamic>>()
+                          .where((x) => x['index'] == g['index'])
+                          .firstOrNull?['util'] as num? ?? 0)
+                      .toDouble(),
+              ]),
+            ),
+            const SizedBox(width: 10),
+            Text('${g['util']}%',
+                style: mono(size: 12, weight: FontWeight.w600, color: Rm.ink)),
+          ]),
+          const SizedBox(height: 6),
+        ],
+      ]),
     );
   }
 }
