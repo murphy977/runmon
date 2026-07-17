@@ -22,7 +22,7 @@
 
 **1. 服务器上装 agent、配对、跑任务**
 ```bash
-pip install runmon          # 即将上架 PyPI,当前见 Releases 里的 wheel
+pip install runmon
 mon pair --relay https://你的relay地址   # 打印二维码
 mon run -- python train.py  # 你原本的命令,前面包一层
 ```
@@ -54,7 +54,7 @@ mon run -- python train.py  # 你原本的命令,前面包一层
 relay 是一个轻量 FastAPI 服务,转发几 KB 级的加密文本 + 心跳,1 核 1G 绰绰有余。
 
 ```bash
-pip install runmon-relay     # 或见 Releases 里的 wheel
+pip install runmon-relay
 python -m runmon_relay --host 127.0.0.1 --port 8080
 ```
 
