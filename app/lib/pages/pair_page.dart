@@ -104,7 +104,7 @@ class _PairPageState extends State<PairPage> {
               Text('服务器终端里会打印一段配对码,复制粘贴到这里:',
                   style: sans(size: 13, color: Rm.inkSoft, height: 1.5)),
               const SizedBox(height: 10),
-              _terminalHint('mon pair --relay <你的relay地址>'),
+              _terminalHint('mon pair'),
               const SizedBox(height: 12),
               TextField(
                 controller: _payload,

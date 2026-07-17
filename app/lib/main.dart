@@ -137,7 +137,7 @@ class _EmptyHome extends StatelessWidget {
                   borderRadius: BorderRadius.circular(Rm.radiusCard),
                 ),
                 child: Text(
-                    'pip install runmon\nmon pair --relay <你的relay地址>',
+                    'pip install runmon\nmon pair',
                     style: mono(size: 13, color: Rm.terminalText, height: 1.7)),
               ),
               const SizedBox(height: 22),
