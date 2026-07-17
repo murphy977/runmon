@@ -86,7 +86,7 @@ class _HomePageState extends State<HomePage> {
           floatingActionButton: Padding(
             padding: const EdgeInsets.only(bottom: 6, right: 6),
             child: PushButton(
-              label: '配对服务器',
+              label: '添加服务器',
               icon: Icons.add_link,
               onPressed: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const PairPage())),
