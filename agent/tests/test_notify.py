@@ -1,5 +1,4 @@
 import json
-import urllib.parse
 
 import runmon.notify as notify
 from runmon.config import Config
@@ -47,31 +46,6 @@ def test_webhook(monkeypatch):
     notify.WebhookChannel({"url": "http://h/x"}).send(EV)
     url, data, _ = calls[0]
     assert url == "http://h/x" and json.loads(data)["type"] == "failed"
-
-
-def test_serverchan_turbo(monkeypatch):
-    calls = capture(monkeypatch)
-    notify.ServerChanChannel({"key": "SCT12345"}).send(EV)
-    url, data, headers = calls[0]
-    assert url == "https://sctapi.ftqq.com/SCT12345.send"
-    assert headers["Content-Type"] == "application/x-www-form-urlencoded"
-    form = urllib.parse.parse_qs(data.decode())
-    assert form["title"] == [EV.title] and form["desp"] == [EV.body]
-
-
-def test_serverchan3_key_routes_to_own_host(monkeypatch):
-    calls = capture(monkeypatch)
-    notify.ServerChanChannel({"key": "sctp678t9abc"}).send(EV)
-    url, _, _ = calls[0]
-    assert url == "https://678.push.ft07.com/send/sctp678t9abc.send"
-
-
-def test_serverchan_truncates_long_title(monkeypatch):
-    calls = capture(monkeypatch)
-    long_ev = Event(type="failed", level="critical", title="x" * 50, body="b", run_id="r")
-    notify.ServerChanChannel({"key": "SCT1"}).send(long_ev)
-    _, data, _ = calls[0]
-    assert len(urllib.parse.parse_qs(data.decode())["title"][0]) == 32
 
 
 def test_wecom_full_url(monkeypatch):

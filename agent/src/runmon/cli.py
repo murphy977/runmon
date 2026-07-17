@@ -119,8 +119,6 @@ def _interactive_channels() -> list[dict]:
         channels.append({"type": "ntfy", "topic": topic, "server": server})
     if key := input("Bark 设备 key(iPhone 装 Bark 获取): ").strip():
         channels.append({"type": "bark", "key": key})
-    if key := input("Server酱 SendKey(推送到微信,sct.ftqq.com 获取): ").strip():
-        channels.append({"type": "serverchan", "key": key})
     if key := input("企业微信群机器人 webhook 地址(群设置里加机器人获取): ").strip():
         channels.append({"type": "wecom", "key": key})
     if tg := input("Telegram <bot_token>:<chat_id>: ").strip():
@@ -148,8 +146,6 @@ def cmd_init(args) -> int:
         if args.bark_server:
             c["server"] = args.bark_server
         new.append(c)
-    if args.serverchan_key:
-        new.append({"type": "serverchan", "key": args.serverchan_key})
     if args.wecom_key:
         new.append({"type": "wecom", "key": args.wecom_key})
     if args.telegram:
@@ -342,7 +338,6 @@ def main(argv: list[str] | None = None) -> int:
     p_init.add_argument("--ntfy-server")
     p_init.add_argument("--bark-key")
     p_init.add_argument("--bark-server")
-    p_init.add_argument("--serverchan-key", help="Server酱 SendKey,推送到微信")
     p_init.add_argument("--wecom-key", help="企业微信群机器人 webhook 地址或 key")
     p_init.add_argument("--telegram", metavar="BOT_TOKEN:CHAT_ID")
     p_init.add_argument("--webhook")
