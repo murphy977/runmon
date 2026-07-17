@@ -74,6 +74,23 @@ def test_serverchan_truncates_long_title(monkeypatch):
     assert len(urllib.parse.parse_qs(data.decode())["title"][0]) == 32
 
 
+def test_wecom_full_url(monkeypatch):
+    calls = capture(monkeypatch)
+    url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=abc-123"
+    notify.WecomChannel({"key": url}).send(EV)
+    got_url, data, headers = calls[0]
+    assert got_url == url
+    p = json.loads(data)
+    assert p["msgtype"] == "text" and EV.title in p["text"]["content"] and EV.body in p["text"]["content"]
+
+
+def test_wecom_bare_key_builds_url(monkeypatch):
+    calls = capture(monkeypatch)
+    notify.WecomChannel({"key": "abc-123"}).send(EV)
+    got_url, _, _ = calls[0]
+    assert got_url == "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=abc-123"
+
+
 def test_make_channels_skips_bad():
     cfg = Config()
     cfg.channels = [{"type": "ntfy", "topic": "t"}, {"type": "nope"}, {"type": "bark"}]

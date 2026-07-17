@@ -105,6 +105,25 @@ class ServerChanChannel:
         _post(self._endpoint(), body, {"Content-Type": "application/x-www-form-urlencoded"})
 
 
+class WecomChannel:
+    """企业微信群机器人:群设置里加机器人,复制它的 webhook 地址即可。腾讯官方,最稳。"""
+    name = "wecom"
+    _API = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="
+
+    def __init__(self, cfg: dict) -> None:
+        raw = cfg["key"].strip()
+        # 用户可粘完整 webhook 地址,也可只粘 ?key= 后面那串
+        self.url = raw if "://" in raw else self._API + raw
+
+    @property
+    def ident(self) -> str:
+        return f"wecom:{self.url}"
+
+    def send(self, ev: Event) -> None:
+        payload = {"msgtype": "text", "text": {"content": f"{ev.title}\n{ev.body}"}}
+        _post(self.url, json.dumps(payload).encode(), _json_headers())
+
+
 class WebhookChannel:
     name = "webhook"
 
@@ -126,6 +145,7 @@ CHANNEL_TYPES: dict[str, type] = {
     "bark": BarkChannel,
     "telegram": TelegramChannel,
     "serverchan": ServerChanChannel,
+    "wecom": WecomChannel,
     "webhook": WebhookChannel,
 }
 
