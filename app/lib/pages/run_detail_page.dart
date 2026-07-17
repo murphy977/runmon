@@ -190,10 +190,6 @@ class _RunDetailPageState extends State<RunDetailPage> {
                               '按原命令原目录重跑「${run['name']}」?'),
                     ),
                     SoftButton(
-                      label: '静音 8 小时', icon: Icons.notifications_paused_outlined,
-                      onPressed: _busy ? null : () => _cmd('mute', {'hours': 8}),
-                    ),
-                    SoftButton(
                       label: shutdownAfter ? '跑完关机 ✓' : '跑完关机',
                       icon: Icons.power_settings_new_rounded,
                       deep: shutdownAfter ? Rm.coralDeep : Rm.inkSoft,
