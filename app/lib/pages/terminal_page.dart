@@ -47,19 +47,35 @@ class _TerminalPageState extends State<TerminalPage> {
         iconTheme: const IconThemeData(color: Rm.terminalText, size: 20),
       ),
       body: SafeArea(
-        child: Column(children: [
-          if (widget.presetCommand != null)
-            _PresetBar(command: widget.presetCommand!,
-                onFill: () => appState.termInput(
-                    widget.agentId, widget.presetCommand!)),
-          Expanded(child: TerminalView(
+        child: ListenableBuilder(
+          listenable: appState,
+          builder: (context, child) {
+            final agent = appState.agents[widget.agentId];
+            final offline = agent == null || !agent.online;
+            return Column(children: [
+              if (offline)
+                Container(
+                  width: double.infinity,
+                  color: Rm.coralDeep,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  child: Text('服务器已断开 · 返回上一页重新进入以恢复终端',
+                      style: sans(size: 12.5, color: Rm.paper)),
+                ),
+              if (widget.presetCommand != null)
+                _PresetBar(command: widget.presetCommand!,
+                    onFill: () => appState.termInput(
+                        widget.agentId, widget.presetCommand!)),
+              Expanded(child: child!),
+            ]);
+          },
+          child: TerminalView(
           terminal,
           textStyle: TerminalStyle(
               fontSize: appSettings.terminalFontSize, fontFamily: Rm.mono),
           theme: TerminalThemes.defaultTheme,
           autofocus: true,
-        )),
-        ]),
+        ),
+        ),
       ),
     );
   }

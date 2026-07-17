@@ -31,6 +31,10 @@ class NtfyChannel:
         self.topic = cfg["topic"]
         self.token = cfg.get("token", "")
 
+    @property
+    def ident(self) -> str:
+        return f"ntfy:{self.server}:{self.topic}"
+
     def send(self, ev: Event) -> None:
         payload = {"topic": self.topic, "title": ev.title, "message": ev.body,
                    "priority": 5 if ev.level == "critical" else 3}
@@ -47,6 +51,10 @@ class BarkChannel:
         self.server = cfg.get("server", "https://api.day.app").rstrip("/")
         self.key = cfg["key"]
 
+    @property
+    def ident(self) -> str:
+        return f"bark:{self.server}:{self.key}"
+
     def send(self, ev: Event) -> None:
         payload = {"title": ev.title, "body": ev.body,
                    "level": "timeSensitive" if ev.level == "critical" else "active"}
@@ -60,6 +68,10 @@ class TelegramChannel:
         self.bot_token = cfg["bot_token"]
         self.chat_id = str(cfg["chat_id"])
 
+    @property
+    def ident(self) -> str:
+        return f"telegram:{self.bot_token}:{self.chat_id}"
+
     def send(self, ev: Event) -> None:
         payload = {"chat_id": self.chat_id, "text": f"{ev.title}\n{ev.body}"}
         _post(f"https://api.telegram.org/bot{self.bot_token}/sendMessage",
@@ -71,6 +83,10 @@ class WebhookChannel:
 
     def __init__(self, cfg: dict) -> None:
         self.url = cfg["url"]
+
+    @property
+    def ident(self) -> str:
+        return f"webhook:{self.url}"
 
     def send(self, ev: Event) -> None:
         payload = {"type": ev.type, "level": ev.level, "title": ev.title,
@@ -119,11 +135,16 @@ class Notifier:
         self._halt = threading.Event()
         self._thread: threading.Thread | None = None
         self._deliver_lock = threading.Lock()  # worker 线程与 flush 互斥,防止同条重复投递
+        self._by_key = {self._key(c, i): c for i, c in enumerate(channels)}
+
+    @staticmethod
+    def _key(ch, idx: int) -> str:
+        return getattr(ch, "ident", None) or f"ch{idx}"
 
     def notify(self, ev: Event) -> None:
         payload = _event_to_json(ev)
-        for idx in range(len(self.channels)):
-            self.store.outbox_enqueue(idx, payload)
+        for i, ch in enumerate(self.channels):
+            self.store.outbox_enqueue(self._key(ch, i), payload)
         self._wake.set()
 
     def deliver_due(self, force: bool = False) -> int:
@@ -134,15 +155,18 @@ class Notifier:
         now = self.clock()
         rows = self.store.outbox_pending(None if force else now)
         for row in rows:
-            idx = row["channel_idx"]
-            if idx >= len(self.channels):
-                self.store.outbox_delivered(row["id"], now)  # 通道已被移除,丢弃
+            ch = self._by_key.get(row["channel_key"])
+            if ch is None:  # 通道配置已变/被删,该密文发不出去了,丢弃
+                self.store.outbox_delivered(row["id"], now)
                 continue
             try:
-                self.channels[idx].send(_event_from_json(row["payload"]))
+                ch.send(_event_from_json(row["payload"]))
                 self.store.outbox_delivered(row["id"], self.clock())
             except Exception:
                 attempts = row["attempts"] + 1
+                if attempts >= 12:  # 死信:重试约数小时仍失败则放弃,不无限占用
+                    self.store.outbox_delivered(row["id"], self.clock())
+                    continue
                 delay = min(BACKOFF_MAX, BACKOFF_BASE * (2 ** row["attempts"]))
                 self.store.outbox_retry(row["id"], attempts, self.clock() + delay)
         return self.store.outbox_remaining()

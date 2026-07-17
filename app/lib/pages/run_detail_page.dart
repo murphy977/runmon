@@ -161,7 +161,8 @@ class _RunDetailPageState extends State<RunDetailPage> {
                             (run['eta_seconds'] as num).toDouble())),
                       _Stat('耗时', fmtDuration(
                           (run['started_at'] as num?)?.toDouble(),
-                          (run['ended_at'] as num?)?.toDouble())),
+                          (run['ended_at'] as num?)?.toDouble(),
+                          agent.serverNow())),
                       if (run['exit_code'] != null)
                         _Stat('EXIT', '${run['exit_code']}'),
                     ]),

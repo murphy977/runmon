@@ -67,6 +67,9 @@ class AgentState {
   final ServerLink link;
   bool online = false;
   bool connected = false; // 与 relay 的连接状态
+  double clockOffset = 0; // 服务器时间 - 本地时间(秒),用于耗时不受手机时钟影响
+  double serverNow() =>
+      DateTime.now().millisecondsSinceEpoch / 1000 + clockOffset;
   Map<String, dynamic>? hb;
   final List<Map<String, dynamic>> hbHistory = [];
   List<Map<String, dynamic>> runs = [];
@@ -158,6 +161,10 @@ class _Conn {
         case 'snapshot':
           final data = await decryptEnv(msg['enc'], _key);
           agent.runs = (data['runs'] as List).cast<Map<String, dynamic>>();
+          if (data['server_now'] is num) {
+            agent.clockOffset = (data['server_now'] as num).toDouble() -
+                DateTime.now().millisecondsSinceEpoch / 1000;
+          }
           final live = agent.runs.map((r) => r['id'] as String).toSet();
           agent.tails.removeWhere((id, _) => !live.contains(id));  // 淘汰已消失任务的尾部
         case 'hb':
@@ -342,9 +349,11 @@ class AppState extends ChangeNotifier {
 
 final appState = AppState();
 
-String fmtDuration(double? startedAt, double? endedAt) {
+String fmtDuration(double? startedAt, double? endedAt, [double? nowOverride]) {
   if (startedAt == null) return '-';
-  final end = endedAt ?? DateTime.now().millisecondsSinceEpoch / 1000;
+  final end = endedAt ??
+      nowOverride ??
+      DateTime.now().millisecondsSinceEpoch / 1000;
   final s = (end - startedAt).round();
   if (s < 60) return '$s秒';
   if (s < 3600) return '${s ~/ 60}分${s % 60}秒';

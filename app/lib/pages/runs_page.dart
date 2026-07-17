@@ -137,7 +137,8 @@ class _RunCard extends StatelessWidget {
     final meta = [
       if (loss != null) 'loss ${loss.toStringAsFixed(4)}',
       fmtDuration((run['started_at'] as num?)?.toDouble(),
-          (run['ended_at'] as num?)?.toDouble()),
+          (run['ended_at'] as num?)?.toDouble(),
+          appState.agents[agentId]?.serverNow()),
     ].join('   ');
     return RmCard(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),

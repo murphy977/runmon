@@ -39,14 +39,18 @@ class SyncState:
         self.last_event_id = 0
 
 
-def compute_sync_messages(store: RunStore, state: SyncState, key: bytes) -> list[dict]:
+def compute_sync_messages(store: RunStore, state: SyncState, key: bytes,
+                          now: float | None = None) -> list[dict]:
     """diff 本地 store,产出需要发给 relay 的消息(纯函数,可单测)。"""
     msgs: list[dict] = []
     snap = run_snapshot(store)
     snap_json = json.dumps(snap, sort_keys=True)
     if snap_json != state.last_snapshot_json:
         state.last_snapshot_json = snap_json
-        msgs.append({"t": "snapshot", "enc": encrypt({"runs": snap}, key)})
+        payload = {"runs": snap}
+        if now is not None:
+            payload["server_now"] = now  # App 用它校准与服务器的时钟偏差
+        msgs.append({"t": "snapshot", "enc": encrypt(payload, key)})
     for r in store.list_runs(limit=50):
         if state.tail_lengths.get(r.id) != r.output_length:
             state.tail_lengths[r.id] = r.output_length
@@ -230,11 +234,19 @@ class Daemon:
     async def _sync_loop(self, ws) -> None:
         state = self._sync_state
         last_hb = 0.0
+        last_prune = 0.0
         while True:
             try:  # L6: sqlite 瞬时锁等错误不该炸掉整条连接
-                msgs = await asyncio.to_thread(compute_sync_messages, self.store, state, self.key)
+                msgs = await asyncio.to_thread(
+                    compute_sync_messages, self.store, state, self.key, time.time())
             except Exception:
                 msgs = []
+            if time.time() - last_prune > 3600:  # 每小时清理老 outbox/events
+                last_prune = time.time()
+                try:
+                    await asyncio.to_thread(self.store.prune_old, time.time())
+                except Exception:
+                    pass
             for m in msgs:
                 await ws.send(json.dumps(m))
             if time.time() - last_hb >= HEARTBEAT_INTERVAL:

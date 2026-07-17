@@ -19,6 +19,17 @@ class SettingsPage extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           children: [
             const _SectionLabel('通知'),
+            Container(
+              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                  color: Rm.cyanTint,
+                  borderRadius: BorderRadius.circular(Rm.radiusInput)),
+              child: Text(
+                  '手机锁屏或后台久了,App 内通知可能收不到。想万无一失,在服务器上跑 '
+                  'mon init 配置 ntfy / Bark / Telegram,由服务器直接推送,不依赖 App 在线。',
+                  style: sans(size: 12.5, color: Rm.cyanDeep, height: 1.55)),
+            ),
             RmCard(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Column(children: [

@@ -60,6 +60,11 @@ CREATE TABLE IF NOT EXISTS pending_cmds (
   msg TEXT NOT NULL,
   created REAL NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_events_agent ON events(agent_id, id);
+CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
+CREATE INDEX IF NOT EXISTS idx_pairings_app ON pairings(app_id);
+CREATE INDEX IF NOT EXISTS idx_tails_agent ON run_tails(agent_id, updated);
+CREATE INDEX IF NOT EXISTS idx_cmds_agent ON pending_cmds(agent_id, created);
 """
 
 
@@ -72,8 +77,10 @@ class RelayStore:
         self._lock = threading.Lock()
         self._conn = sqlite3.connect(str(db_path), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
+        self._claim_window = [0, 0.0]  # 全局 claim 限速 [count, window_start]
         with self._lock:
             self._conn.execute("PRAGMA journal_mode=WAL")
+            self._conn.execute("PRAGMA busy_timeout=5000")
             self._conn.executescript(_SCHEMA)
             self._conn.commit()
 
@@ -124,23 +131,41 @@ class RelayStore:
         return {"code": code, "pair_token": pair_token,
                 "device_id": agent_id, "device_token": agent_token}
 
+    def _claim_rate_ok(self, now: float, limit: int = 60, window: float = 60) -> bool:
+        with self._lock:
+            if now - self._claim_window[1] > window:
+                self._claim_window = [1, now]
+                return True
+            self._claim_window[0] += 1
+            return self._claim_window[0] <= limit
+
     def pair_claim(self, code: str, app_name: str) -> dict | None:
+        now = time.time()
+        if not self._claim_rate_ok(now):
+            return None  # 全局限速:防 6 位码暴力枚举
         with self._lock:
             row = self._conn.execute(
-                "SELECT * FROM pending_pairs WHERE code=?", (code,)).fetchone()
-            if row is None or row["expires"] < time.time() or row["claimed_app_id"]:
-                return None
+                "SELECT agent_id FROM pending_pairs WHERE code=?", (code,)).fetchone()
+        if row is None:
+            return None
+        agent_id = row["agent_id"]
         app_id, app_token = self.create_device("app", app_name)
         with self._lock:
-            self._conn.execute(
-                "UPDATE pending_pairs SET claimed_app_id=?, claimed_app_name=? WHERE code=?",
-                (app_id, app_name, code))
+            # 原子认领:仅当仍未被认领且未过期时才成功,rowcount 保证唯一
+            cur = self._conn.execute(
+                "UPDATE pending_pairs SET claimed_app_id=?, claimed_app_name=? "
+                "WHERE code=? AND claimed_app_id IS NULL AND expires>?",
+                (app_id, app_name, code, now))
+            if cur.rowcount != 1:  # 被并发抢先或已过期:回滚刚建的设备
+                self._conn.execute("DELETE FROM devices WHERE id=?", (app_id,))
+                self._conn.commit()
+                return None
             self._conn.execute(
                 "INSERT OR IGNORE INTO pairings (agent_id, app_id) VALUES (?,?)",
-                (row["agent_id"], app_id))
+                (agent_id, app_id))
             self._conn.commit()
         return {"device_id": app_id, "device_token": app_token,
-                "agent_id": row["agent_id"], "agent_name": self.device_name(row["agent_id"])}
+                "agent_id": agent_id, "agent_name": self.device_name(agent_id)}
 
     def pair_status(self, code: str, pair_token: str) -> dict | None:
         with self._lock:

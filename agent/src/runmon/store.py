@@ -41,7 +41,8 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE TABLE IF NOT EXISTS outbox (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  channel_idx INTEGER NOT NULL,
+  channel_idx INTEGER NOT NULL DEFAULT 0,
+  channel_key TEXT,
   payload TEXT NOT NULL,
   attempts INTEGER NOT NULL DEFAULT 0,
   next_retry_at REAL NOT NULL DEFAULT 0,
@@ -103,6 +104,9 @@ class RunStore:
         event_cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(events)")}
         if "payload" not in event_cols:
             self._conn.execute("ALTER TABLE events ADD COLUMN payload TEXT")
+        outbox_cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(outbox)")}
+        if "channel_key" not in outbox_cols:
+            self._conn.execute("ALTER TABLE outbox ADD COLUMN channel_key TEXT")
 
     def _row_to_run(self, row: sqlite3.Row) -> RunRecord:
         return RunRecord(**{k: row[k] for k in _RUN_COLUMNS})
@@ -184,10 +188,19 @@ class RunStore:
             row = self._conn.execute(sql, args).fetchone()
         return row["m"]
 
-    def outbox_enqueue(self, channel_idx: int, payload: str) -> None:
+    def outbox_enqueue(self, channel_key: str, payload: str) -> None:
         with self._lock:
-            self._conn.execute("INSERT INTO outbox (channel_idx, payload) VALUES (?,?)",
-                               (channel_idx, payload))
+            self._conn.execute("INSERT INTO outbox (channel_key, payload) VALUES (?,?)",
+                               (str(channel_key), payload))
+            self._conn.commit()
+
+    def prune_old(self, now: float, outbox_days: int = 7, event_days: int = 30) -> None:
+        with self._lock:
+            self._conn.execute(
+                "DELETE FROM outbox WHERE delivered_at IS NOT NULL AND delivered_at < ?",
+                (now - outbox_days * 86400,))
+            self._conn.execute("DELETE FROM events WHERE ts < ?",
+                               (now - event_days * 86400,))
             self._conn.commit()
 
     def outbox_pending(self, now: float | None) -> list[sqlite3.Row]:

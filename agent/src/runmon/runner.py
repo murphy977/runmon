@@ -37,7 +37,9 @@ class RunWrapper:
         self.run = None
         self.child_pid: int | None = None
         self._gpu_history: list[tuple[float, float]] = []
-        self._last_progress_write = 0.0
+        self._out_buf = ""
+        self._err_window = ""
+        self._last_flush = 0.0
 
     def execute(self) -> int:
         log_dir = data_dir() / "logs"
@@ -71,6 +73,7 @@ class RunWrapper:
         finally:
             stop_monitor.set()
             mon.join(timeout=2)
+        self._flush_output(time.time())  # 落库残留输出
 
         status = "completed" if exit_code == 0 else "failed"
         st = self.parser.state
@@ -155,17 +158,27 @@ class RunWrapper:
 
     def _ingest(self, text: str) -> None:
         try:
-            self.store.append_output(self.run.id, text,
-                                     self.config.ring_buffer_kb * 1024)
-            if ev := self.engine.on_output(self.run, text):
+            self._out_buf += text
+            # 错误检测在最近 16KB 窗口上做,避免关键字被读边界劈开而漏检
+            self._err_window = (self._err_window + text)[-16384:]
+            if ev := self.engine.on_output(self.run, self._err_window):
                 self.notifier.notify(ev)
-            if self.parser.feed(text) and time.time() - self._last_progress_write > 1.0:
-                st = self.parser.state
-                self.store.update_run(self.run.id, progress=st.percent,
-                                      eta_seconds=st.eta_seconds, last_loss=st.loss)
-                self._last_progress_write = time.time()
+            self.parser.feed(text)
+            now = time.time()
+            if now - self._last_flush > 1.0 or len(self._out_buf) >= 262144:
+                self._flush_output(now)
         except Exception:
             pass  # 监控故障不影响任务
+
+    def _flush_output(self, now: float) -> None:
+        if self._out_buf:
+            self.store.append_output(self.run.id, self._out_buf,
+                                     self.config.ring_buffer_kb * 1024)
+            self._out_buf = ""
+        st = self.parser.state
+        self.store.update_run(self.run.id, progress=st.percent,
+                              eta_seconds=st.eta_seconds, last_loss=st.loss)
+        self._last_flush = now
 
     def _monitor(self, stop: threading.Event) -> None:
         while not stop.wait(self.config.sample_interval_s):
