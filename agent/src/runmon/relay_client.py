@@ -144,8 +144,9 @@ class Daemon:
         backoff = 1.0
         while True:
             try:
+                # proxy=None:绕过系统代理直连 relay——代理常会剥掉 WebSocket 升级头导致 404
                 async with websockets.connect(
-                        self.ws_url(),
+                        self.ws_url(), proxy=None,
                         additional_headers={"Authorization": f"Bearer {self.token}",
                                             "X-Device": self.device_id}) as ws:
                     backoff = 1.0
