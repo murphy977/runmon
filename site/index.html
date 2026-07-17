@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RunMon · 长任务陪伴器</title>
+<meta name="description" content="手机实时监控服务器上的训练、爬虫、长脚本。还在跑吗、GPU 在干活吗、跑完了没——挂了第一时间知道。端到端加密,自托管。">
+<style>
+/* Hallmark · macrostructure: Marquee Hero · theme: Hum · genre: playful→elegant
+ * paper #F7F5EC · ink #12171B · accents: pear/cyan/coral/mint/lavender
+ * display+body: Plus Jakarta Sans · mono: JetBrains Mono · roman headers only
+ * pre-emit critique: P5 H5 E5 S4 R4 V4 */
+
+@font-face { font-family:'Jakarta'; src:url('fonts/PlusJakartaSans-Regular.ttf') format('truetype'); font-weight:400; font-display:swap; }
+@font-face { font-family:'Jakarta'; src:url('fonts/PlusJakartaSans-Medium.ttf') format('truetype'); font-weight:500; font-display:swap; }
+@font-face { font-family:'Jakarta'; src:url('fonts/PlusJakartaSans-SemiBold.ttf') format('truetype'); font-weight:600; font-display:swap; }
+@font-face { font-family:'Jakarta'; src:url('fonts/PlusJakartaSans-Bold.ttf') format('truetype'); font-weight:700; font-display:swap; }
+@font-face { font-family:'JBMono'; src:url('fonts/JetBrainsMono-Regular.ttf') format('truetype'); font-weight:400; font-display:swap; }
+@font-face { font-family:'JBMono'; src:url('fonts/JetBrainsMono-Medium.ttf') format('truetype'); font-weight:500; font-display:swap; }
+
+:root{
+  --paper:#F7F5EC; --paper2:#EEEBDF; --card:#FEFDFA; --hairline:#D7D4CA;
+  --ink:#12171B; --ink-soft:#50565C; --ink-faint:#82878C;
+  --pear:#F6CE00; --pear-deep:#B49600; --pear-tint:#F7F0D6;
+  --cyan:#009FEF; --cyan-deep:#006DA6; --cyan-tint:#DEF0FC;
+  --coral:#FF3A5D; --coral-deep:#BD1F3D; --coral-tint:#FCE9E9;
+  --mint:#66DA85; --mint-deep:#287C42; --mint-tint:#DFF3E2;
+  --lav:#C28EFB;
+  --term-bg:#151B21; --term-fg:#E2DED0;
+  --sans:'Jakarta',-apple-system,system-ui,sans-serif;
+  --mono:'JBMono',ui-monospace,monospace;
+  --r-card:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:clip}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-weight:400;line-height:1.6;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-faint);display:flex;align-items:center;gap:8px}
+.eyebrow::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--pear)}
+
+/* nav */
+nav{position:sticky;top:0;z-index:50;background:rgba(247,245,236,.82);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--hairline)}
+.nav-in{max-width:1120px;margin:0 auto;padding:16px 24px;display:flex;
+  align-items:center;justify-content:space-between}
+.brand{font-weight:700;font-size:19px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.brand i{width:9px;height:9px;border-radius:50%;background:var(--pear);display:inline-block}
+.nav-links{display:flex;align-items:center;gap:26px;font-size:14.5px;font-weight:500}
+.nav-links a:not(.pill){color:var(--ink-soft)}
+.nav-links a:not(.pill):hover{color:var(--ink)}
+.ver{font-family:var(--mono);font-size:12px;color:var(--ink-faint)}
+
+/* Hum push 按钮 */
+.push{display:inline-flex;align-items:center;gap:9px;font-family:var(--sans);
+  font-weight:700;font-size:15px;color:var(--ink);background:var(--pear);
+  border:0;border-radius:999px;padding:14px 24px;cursor:pointer;position:relative;
+  box-shadow:0 4px 0 0 var(--pear-deep),0 6px 12px -3px rgba(180,150,0,.35);
+  transition:transform .14s cubic-bezier(.2,.7,.3,1),box-shadow .14s cubic-bezier(.2,.7,.3,1)}
+.push:hover{transform:translateY(-2px);box-shadow:0 6px 0 0 var(--pear-deep),0 12px 22px -4px rgba(180,150,0,.4)}
+.push:active{transform:translateY(3px);box-shadow:0 1px 0 0 var(--pear-deep);transition-duration:70ms}
+.push.sm{font-size:13.5px;padding:9px 16px}
+.soft{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px;
+  padding:11px 18px;border-radius:999px;background:var(--paper2);color:var(--ink-soft);
+  transition:background .16s}
+.soft:hover{background:var(--pear-tint)}
+
+/* hero */
+.hero{position:relative;padding:72px 0 88px}
+.hero-grid{display:grid;grid-template-columns:1.12fr .88fr;gap:44px;align-items:center}
+h1{font-size:clamp(2.4rem,5.6vw,4.3rem);line-height:1.08;font-weight:700;
+  letter-spacing:-.03em;margin:20px 0 22px}
+.lede{font-size:clamp(1rem,1.6vw,1.22rem);color:var(--ink-soft);max-width:30ch;line-height:1.6}
+.hero-cta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:30px}
+.cmd{margin-top:22px;background:var(--term-bg);border-radius:14px;padding:15px 18px;
+  font-family:var(--mono);font-size:14px;color:var(--term-fg);display:flex;
+  align-items:center;gap:10px;max-width:400px}
+.cmd .dollar{color:var(--pear)}
+.cmd .note{margin-left:auto;font-size:11px;color:var(--ink-faint)}
+
+/* 几何球 */
+.orbs{position:relative;height:440px}
+.orb{position:absolute;border-radius:50%}
+.orb.big{width:250px;height:250px;left:26%;top:24%;
+  background:radial-gradient(circle at 35% 30%,#FFC24B,var(--coral) 130%);
+  box-shadow:0 30px 60px -20px rgba(255,58,93,.45)}
+.orb.pear{width:80px;height:80px;left:2%;top:32%;background:var(--pear)}
+.orb.coral{width:66px;height:66px;right:6%;top:62%;background:var(--coral)}
+.orb.mint{width:46px;height:46px;left:16%;bottom:6%;background:var(--mint)}
+.pill-orb{position:absolute;right:0;top:40%;width:104px;height:56px;border-radius:999px;background:var(--cyan)}
+.ring-orb{position:absolute;right:14%;top:4%;width:74px;height:74px;border-radius:50%;
+  border:5px solid var(--lav)}
+.float{animation:float 6s ease-in-out infinite}
+.float.d1{animation-delay:-2s}.float.d2{animation-delay:-4s}.float.d3{animation-delay:-1s}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+
+hr.thick{border:0;height:1px;background:var(--hairline);margin:0}
+
+/* 痛点 band */
+.pain{background:var(--coral-tint);padding:64px 0}
+.pain h2{font-size:clamp(1.5rem,3vw,2rem);font-weight:700;letter-spacing:-.02em;margin:14px 0 32px;max-width:20ch}
+.pain-rows{display:grid;gap:2px}
+.pain-row{display:flex;gap:16px;align-items:baseline;padding:16px 0;border-top:1px solid rgba(189,31,61,.18)}
+.pain-row .n{font-family:var(--mono);font-size:13px;color:var(--coral-deep);min-width:28px}
+.pain-row p{font-size:clamp(1.05rem,2vw,1.3rem);font-weight:500}
+
+/* 功能 bento */
+.features{padding:76px 0}
+.sec-head{text-align:center;margin-bottom:44px}
+.sec-head h2{font-size:clamp(1.8rem,3.4vw,2.5rem);font-weight:700;letter-spacing:-.025em;margin-top:12px}
+.sec-head .eyebrow{justify-content:center}
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+.cell{background:var(--card);border:1px solid var(--hairline);border-radius:var(--r-card);
+  padding:26px;transition:transform .16s,box-shadow .16s,background .16s;position:relative;overflow:hidden}
+.cell:hover{transform:translateY(-4px);box-shadow:0 18px 40px -18px rgba(18,23,27,.16)}
+.cell .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  font-family:var(--mono);font-weight:500;font-size:15px;margin-bottom:16px}
+.cell h3{font-size:18px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}
+.cell p{font-size:14.5px;color:var(--ink-soft);line-height:1.6}
+.span3{grid-column:span 3}.span2{grid-column:span 2}
+.tint-pear{background:linear-gradient(180deg,var(--pear-tint),var(--card))}
+.tint-cyan{background:linear-gradient(180deg,var(--cyan-tint),var(--card))}
+.tint-mint{background:linear-gradient(180deg,var(--mint-tint),var(--card))}
+.tint-coral{background:linear-gradient(180deg,var(--coral-tint),var(--card))}
+.ic-pear{background:var(--pear);color:var(--ink)}
+.ic-cyan{background:var(--cyan-tint);color:var(--cyan-deep)}
+.ic-coral{background:var(--coral-tint);color:var(--coral-deep)}
+.ic-mint{background:var(--mint-tint);color:var(--mint-deep)}
+.ic-lav{background:#EFE0FF;color:#7A3FBF}
+
+/* 下载 */
+.download{background:var(--paper2);padding:76px 0}
+.dl-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;margin-top:40px}
+.dl-card{background:var(--card);border:1px solid var(--hairline);border-radius:var(--r-card);padding:30px}
+.dl-card h3{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px;display:flex;align-items:center;gap:9px}
+.dl-card .sub{font-size:14px;color:var(--ink-soft);margin-bottom:22px}
+.dl-main{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.dl-alt{display:flex;gap:10px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:12.5px;padding:8px 13px;border-radius:999px;
+  border:1px solid var(--hairline);color:var(--ink-soft);transition:border-color .16s,color .16s}
+.chip:hover{border-color:var(--pear-deep);color:var(--ink)}
+.termbox{background:var(--term-bg);border-radius:12px;padding:16px 18px;font-family:var(--mono);
+  font-size:13.5px;color:var(--term-fg);line-height:1.9;margin-bottom:14px;overflow-x:auto}
+.termbox .c{color:var(--pear)}.termbox .dim{color:var(--ink-faint)}
+.mini-note{font-size:12.5px;color:var(--ink-faint);font-family:var(--mono)}
+
+/* 页脚 */
+footer{padding:52px 0 60px}
+.foot{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.foot .big{font-size:clamp(1.4rem,3vw,2rem);font-weight:700;letter-spacing:-.02em;line-height:1.25;max-width:16ch}
+.foot .meta{font-family:var(--mono);font-size:12px;color:var(--ink-faint);text-align:right;line-height:1.9}
+
+@media(max-width:860px){
+  .hero-grid{grid-template-columns:1fr;gap:24px}
+  .orbs{height:300px;order:-1}
+  .orb.big{width:180px;height:180px}
+  .bento{grid-template-columns:1fr}
+  .span3,.span2{grid-column:span 1}
+  .dl-grid{grid-template-columns:1fr}
+  .nav-links{gap:16px}
+  .nav-links .hide-sm{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a href="#" class="brand"><i></i>RunMon</a>
+    <div class="nav-links">
+      <a href="#features" class="hide-sm">功能</a>
+      <a href="#download" class="hide-sm">下载</a>
+      <span class="ver">v1.0</span>
+      <a href="#download" class="push sm">下载 App</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">长任务陪伴器</div>
+      <h1>让训练跑它的,<br>你去过你的生活。</h1>
+      <p class="lede">手机实时监控服务器上的训练、爬虫、长脚本。还在跑吗、GPU 在不在干活、跑完了没——出事第一时间知道。</p>
+      <div class="hero-cta">
+        <a href="#download" class="push">下载 App</a>
+        <a href="#features" class="soft">看看能做什么 →</a>
+      </div>
+      <div class="cmd"><span class="dollar">$</span>pip install runmon<span class="note">服务器端 · 一行接入</span></div>
+    </div>
+    <div class="orbs" aria-hidden="true">
+      <div class="ring-orb float d1"></div>
+      <div class="orb pear float d2"></div>
+      <div class="orb big float"></div>
+      <div class="pill-orb float d3"></div>
+      <div class="orb coral float d1"></div>
+      <div class="orb mint float d2"></div>
+    </div>
+  </div>
+</header>
+
+<hr class="thick">
+
+<section class="pain">
+  <div class="wrap">
+    <div class="eyebrow">你是不是也这样</div>
+    <h2>跑一次训练,一整天心不在焉。</h2>
+    <div class="pain-rows">
+      <div class="pain-row"><span class="n">01</span><p>跑了几个小时,中途报错。GPU 已经空闲半天,你还不知道。</p></div>
+      <div class="pain-row"><span class="n">02</span><p>忍不住 ssh 上去看一眼跑到哪了,过十分钟又看一眼。</p></div>
+      <div class="pain-row"><span class="n">03</span><p>去吃饭、睡觉、通勤,心里还惦记着回电脑前看看情况。</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">RunMon 帮你盯着</div>
+      <h2>装上就安心,该干嘛干嘛去。</h2>
+    </div>
+    <div class="bento">
+      <article class="cell span3 tint-pear">
+        <div class="ic ic-pear">!</div>
+        <h3>六类事件,挂了必达</h3>
+        <p>完成、失败、报错输出、GPU 假死(进程活着却不干活)、日志静默、磁盘写满——任一发生,推到你手机。通道走 ntfy / Bark / Telegram,App 被系统杀了也收得到。</p>
+      </article>
+      <article class="cell span3 tint-cyan">
+        <div class="ic ic-cyan">▮</div>
+        <h3>实时终端流 + 进度</h3>
+        <p>手机上看终端输出实时滚动,进度条、loss、ETA 从日志自动解析,不用改一行训练代码。</p>
+      </article>
+      <article class="cell span2 tint-mint">
+        <div class="ic ic-mint">∿</div>
+        <h3>资源曲线</h3>
+        <p>GPU 利用率、显存、CPU、内存,实时曲线一眼看穿。</p>
+      </article>
+      <article class="cell span2">
+        <div class="ic ic-coral">⏻</div>
+        <h3>远程操作</h3>
+        <p>停止、重跑、拉完整日志、跑完自动关机——租卡党省钱。</p>
+      </article>
+      <article class="cell span2 tint-coral">
+        <div class="ic ic-lav">›_</div>
+        <h3>完整交互终端</h3>
+        <p>手机上开一个真终端,跑任意命令,和 SSH 一样。</p>
+      </article>
+      <article class="cell span3">
+        <div class="ic ic-mint">🔒</div>
+        <h3>端到端加密 · 自托管</h3>
+        <p>你的训练日志和命令全程加密,中转服务器只见密文。中转服务自己部署,数据不经过任何第三方。</p>
+      </article>
+      <article class="cell span3 tint-pear">
+        <div class="ic ic-pear">↹</div>
+        <h3>零侵入接入</h3>
+        <p>新任务 <code>mon run -- python train.py</code> 包一层就行;已经在 tmux 里跑了十小时的任务,<code>mon attach</code> 直接接管。</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="download" id="download">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">开始使用</div>
+      <h2>三步:装 App、装 agent、扫码配对。</h2>
+    </div>
+    <div class="dl-grid">
+      <div class="dl-card">
+        <h3><span style="color:var(--pear-deep)">●</span> 手机 App</h3>
+        <div class="sub">安卓 · 25MB · 现代手机装 arm64 即可</div>
+        <div class="dl-main">
+          <a href="downloads/RunMon-arm64.apk" class="push" download>下载 arm64 版</a>
+        </div>
+        <div class="dl-alt">
+          <a href="downloads/RunMon.apk" class="chip" download>通用版 67MB</a>
+          <a href="downloads/RunMon-arm32.apk" class="chip" download>arm32 老手机</a>
+          <a href="downloads/RunMon-x86.apk" class="chip" download>x86 模拟器</a>
+        </div>
+      </div>
+      <div class="dl-card">
+        <h3><span style="color:var(--cyan-deep)">●</span> 服务器 agent</h3>
+        <div class="sub">跑任务的机器上装</div>
+        <div class="termbox"><span class="dim"># 即将上架 PyPI,当前用 wheel</span><br><span class="c">$</span> pip install <a href="downloads/runmon-1.0.0-py3-none-any.whl" download style="color:var(--term-fg);text-decoration:underline">runmon-1.0.0-*.whl</a><br><span class="c">$</span> mon pair --relay &lt;你的地址&gt;<br><span class="c">$</span> mon run -- python train.py</div>
+        <div class="mini-note">中转服务(relay)可自托管 · <a href="downloads/runmon_relay-1.0.0-py3-none-any.whl" download style="color:var(--cyan-deep)">下载 relay wheel</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <div class="big">别再守着终端了。<br>RunMon 替你盯着。</div>
+    <div class="meta">
+      RunMon v1.0.0<br>
+      长任务陪伴器<br>
+      MIT License · 2026
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
