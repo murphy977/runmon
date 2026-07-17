@@ -198,7 +198,14 @@ def cmd_pair(args) -> int:
     cfg.save()
     payload = json.dumps({"u": url, "c": start["code"], "k": key_b64},
                          separators=(",", ":"))
-    print("在手机 App 上粘贴以下配对载荷(10 分钟内有效):\n")
+    print("用手机 App 扫码,或粘贴以下配对载荷(10 分钟内有效):\n")
+    try:
+        import qrcode
+        qr = qrcode.QRCode(border=1)
+        qr.add_data(payload)
+        qr.print_ascii(invert=True)
+    except Exception:
+        pass
     print(f"  {payload}\n")
     print(f"配对码:{start['code']}")
     if args.no_wait:

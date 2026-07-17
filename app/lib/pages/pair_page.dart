@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../state.dart';
+import 'scan_page.dart';
 import '../ui.dart';
 
 class PairPage extends StatefulWidget {
@@ -17,6 +18,15 @@ class _PairPageState extends State<PairPage> {
   final _name = TextEditingController(text: Platform.localHostname);
   bool _busy = false;
   String? _error;
+
+  Future<void> _scan() async {
+    final result = await Navigator.push<String>(
+        context, MaterialPageRoute(builder: (_) => const ScanPage()));
+    if (result != null && mounted) {
+      _payload.text = result;
+      _pair();
+    }
+  }
 
   Future<void> _pair() async {
     setState(() {
@@ -108,6 +118,12 @@ class _PairPageState extends State<PairPage> {
                   label: _busy ? '配对中…' : '配对',
                   icon: Icons.link_rounded,
                   onPressed: _busy ? null : _pair,
+                ),
+                const SizedBox(width: 12),
+                SoftButton(
+                  label: '扫码', icon: Icons.qr_code_scanner_rounded,
+                  deep: Rm.cyanDeep, tint: Rm.cyanTint,
+                  onPressed: _busy ? null : _scan,
                 ),
               ]),
             ],
