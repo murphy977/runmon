@@ -232,6 +232,7 @@ def cmd_pair(args) -> int:
                              {"code": start["code"], "pair_token": start["pair_token"]})
             if st.get("claimed"):
                 print(f"\n✅ 已与「{st.get('app_name') or '手机'}」配对。现在运行:mon daemon")
+                print("   (加 -d 让它退到后台:mon daemon -d)")
                 return 0
         except Exception:
             pass
