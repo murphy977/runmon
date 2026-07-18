@@ -8,6 +8,7 @@ import 'pages/runs_page.dart';
 import 'settings.dart';
 import 'state.dart';
 import 'ui.dart';
+import 'update.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +41,15 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String? _shownNotice;
+
+  @override
+  void initState() {
+    super.initState();
+    // 启动时静默检查更新:有新版才弹窗,已是最新/出错都不打扰
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) checkAndPrompt(context, silent: true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

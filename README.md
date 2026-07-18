@@ -10,7 +10,7 @@
 
 > A training run errors out halfway through and the GPU sits idle for hours with nobody noticing; you keep meaning to SSH in and check — at dinner, in bed. RunMon exists to kill that feeling.
 
-`v1.0.3` · Python + Flutter · MIT · end-to-end encrypted
+`v1.0.4` · Python + Flutter · MIT · end-to-end encrypted
 
 ---
 

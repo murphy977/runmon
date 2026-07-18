@@ -1,7 +1,7 @@
 name: runmon_app
 description: "RunMon — 长任务陪伴器手机端:实时查看服务器训练任务,接收事件,远程处理。"
 publish_to: 'none'
-version: 1.0.3+3
+version: 1.0.4+4
 
 environment:
   sdk: ^3.12.2
@@ -16,6 +16,9 @@ dependencies:
   flutter_local_notifications: ^19.0.0
   mobile_scanner: ^7.0.0
   xterm: ^4.0.0
+  package_info_plus: ^8.0.0
+  path_provider: ^2.1.0
+  open_filex: ^4.5.0
 
 dev_dependencies:
   flutter_test:

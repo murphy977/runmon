@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../settings.dart';
 import '../ui.dart';
+import '../update.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -96,6 +98,29 @@ class SettingsPage extends StatelessWidget {
                   activeColor: Rm.pearDeep,
                   label: '${appSettings.terminalFontSize.round()}',
                   onChanged: appSettings.setTermFont,
+                ),
+              ]),
+            ),
+            const SizedBox(height: 8),
+            const _SectionLabel('关于'),
+            RmCard(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Column(children: [
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (c, s) => ListTile(
+                    title: Text('当前版本', style: sans(size: 15)),
+                    trailing: Text(s.hasData ? 'v${s.data!.version}' : '…',
+                        style: mono(size: 13.5, color: Rm.inkFaint)),
+                  ),
+                ),
+                ListTile(
+                  title: Text('检查更新', style: sans(size: 15)),
+                  subtitle: Text('从官网检查是否有新版本',
+                      style: sans(size: 12.5, color: Rm.inkFaint)),
+                  trailing: const Icon(Icons.system_update_rounded,
+                      size: 20, color: Rm.pearDeep),
+                  onTap: () => checkAndPrompt(context, silent: false),
                 ),
               ]),
             ),
