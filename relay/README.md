@@ -1,100 +1,106 @@
+<div align="center">
+
+[![English](https://img.shields.io/badge/English-2563EB?style=for-the-badge)](README.md) [![简体中文](https://img.shields.io/badge/简体中文-64748B?style=for-the-badge)](README.zh-CN.md)
+
+</div>
+
 # RunMon Relay
 
-**[RunMon](https://github.com/murphy977/runmon) 的自托管中转服务** —— 在 GPU 服务器上的 agent 和手机 App 之间转发端到端加密的密文。
+**The self-hosted relay for [RunMon](https://github.com/murphy977/runmon)** — it forwards end-to-end-encrypted ciphertext between the agent on your GPU server and the mobile app.
 
-服务器和手机都不需要公网 IP,双方各自**出站**连到 relay;relay 是唯一有公网地址的一方,且只存密文 —— 被入侵也读不到你的训练日志。转发的是几 KB 级的加密文本 + 心跳,**1 核 1G 绰绰有余**。
+Neither the server nor the phone needs a public IP; both dial **outbound** to the relay. The relay is the only party with a public address, and it only ever stores ciphertext — even if it's compromised, your training logs stay unreadable. It forwards a few KB of encrypted text plus heartbeats, so **1 core / 1 GB is plenty**.
 
-> 大多数人不需要自建:`mon pair` 默认会用一个公共体验中转,直接就能上手。只有你想让数据完全走自己的服务器时,才需要下面这套。
+> Most people don't need to self-host: `mon pair` uses a public relay by default, so you can start right away. You only need the setup below if you want your data to run entirely on your own server.
 
 ---
 
-## 先分清:本机试跑 vs 生产部署
+## First, tell the two apart: local test vs. production deployment
 
-**只想在本机跑一下看看** —— 一条命令就够:
+**Just want to try it locally** — one command is enough:
 
 ```bash
 pip install runmon-relay
 python -m runmon_relay --host 127.0.0.1 --port 8080
 ```
 
-但这样它**只监听本机、只有明文 HTTP**,手机和别的服务器连不进来。要真正给 agent 和手机用,必须做下面的生产部署 —— 因为客户端连的是 **WSS(加密 WebSocket)**,而 relay 自己不管 TLS,得靠前面的 nginx。
+But like this it **only listens on localhost and only speaks plain HTTP** — your phone and other servers can't reach it. To actually serve the agent and the app you need the production setup below, because clients connect over **WSS (encrypted WebSocket)**, and the relay itself doesn't handle TLS — that's nginx's job out front.
 
-三句话概括生产部署:**relay 跑在本机 8080(明文)→ nginx 在 443 做 TLS 终止 + WebSocket 反代 → certbot 签证书 → systemd 保证它一直活着。**
+Production deployment in one line: **relay runs on localhost:8080 (plaintext) → nginx terminates TLS on 443 + reverse-proxies the WebSocket → certbot issues the certificate → systemd keeps it alive.**
 
 ---
 
-## 生产部署(5 步)
+## Production deployment (5 steps)
 
-### 前提
+### Prerequisites
 
-- 一台**有公网 IP** 的服务器(agent 和手机都往它连)
-- 一个你能改 DNS 的域名
-- 服务器已装 `python3`(≥3.10)、`nginx`、`certbot`(`certbot` + `python3-certbot-nginx`)
+- A server **with a public IP** (both the agent and the phone connect to it)
+- A domain whose DNS you can edit
+- `python3` (≥3.10), `nginx`, and `certbot` (`certbot` + `python3-certbot-nginx`) installed on the server
 
-### 1. 装 relay 到独立目录
+### 1. Install the relay into its own directory
 
-用一个专门的 venv 和服务账号,和系统 Python 隔离:
+Use a dedicated venv and service account, isolated from the system Python:
 
 ```bash
-sudo useradd -r -s /usr/sbin/nologin runmon        # 服务账号(推荐,权限最小)
+sudo useradd -r -s /usr/sbin/nologin runmon        # service account (recommended, least privilege)
 sudo mkdir -p /opt/runmon-relay
 sudo python3 -m venv /opt/runmon-relay/venv
 sudo /opt/runmon-relay/venv/bin/pip install runmon-relay
 sudo chown -R runmon:runmon /opt/runmon-relay
 ```
 
-### 2. 用 systemd 常驻
+### 2. Keep it running with systemd
 
-下载现成的单元文件(已内置 `MemoryMax=300M`,适合小内存机器,崩了自动重启):
+Download the ready-made unit file (it already sets `MemoryMax=300M` for small machines and auto-restarts on crash):
 
 ```bash
 sudo curl -fsSL https://raw.githubusercontent.com/murphy977/runmon/main/relay/deploy/runmon-relay.service \
      -o /etc/systemd/system/runmon-relay.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now runmon-relay
-systemctl status runmon-relay        # 应为 active (running)
-curl http://127.0.0.1:8080/health    # 应返回 {"ok":true}
+systemctl status runmon-relay        # should be active (running)
+curl http://127.0.0.1:8080/health    # should return {"ok":true}
 ```
 
-到这里 relay 已经在本机 `127.0.0.1:8080` 跑起来了,但还只有本机能访问。
+At this point the relay is running on `127.0.0.1:8080`, but only reachable from the machine itself.
 
-### 3. DNS 加一条 A 记录
+### 3. Add a DNS A record
 
-把一个子域名指向服务器公网 IP:
+Point a subdomain at your server's public IP:
 
 ```
-mon.example.com    A    你的服务器IP
+mon.example.com    A    YOUR_SERVER_IP
 ```
 
-等它生效(`dig mon.example.com` 能解析到你的 IP)再往下走 —— certbot 签证书需要域名先解析得到。
+Wait for it to take effect (`dig mon.example.com` resolves to your IP) before continuing — certbot needs the domain to resolve in order to issue a certificate.
 
-### 4. nginx 反向代理
+### 4. nginx reverse proxy
 
-下载现成模板,**关键是它带了 WebSocket upgrade 头** —— agent 和手机的长连全靠它,漏了会 404:
+Download the ready-made template — **the important part is the WebSocket upgrade headers**; the agent's and phone's long-lived connections depend on them, and without them you get 404s:
 
 ```bash
 sudo curl -fsSL https://raw.githubusercontent.com/murphy977/runmon/main/relay/deploy/nginx-example.conf \
      -o /etc/nginx/sites-available/runmon-relay.conf
-sudo sed -i 's/mon.example.com/mon.你的域名.com/g' /etc/nginx/sites-available/runmon-relay.conf
+sudo sed -i 's/mon.example.com/mon.your-domain.com/g' /etc/nginx/sites-available/runmon-relay.conf
 sudo ln -s /etc/nginx/sites-available/runmon-relay.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-### 5. certbot 签 HTTPS 证书
+### 5. certbot issues the HTTPS certificate
 
 ```bash
 sudo certbot --nginx -d mon.example.com
 ```
 
-certbot 会自动往 nginx 配置里填证书路径、加上 80→443 跳转,并设置自动续期。
+certbot automatically fills the certificate paths into your nginx config, adds the 80→443 redirect, and sets up auto-renewal.
 
-### 验证
+### Verify
 
 ```bash
-curl https://mon.example.com/health     # 应返回 {"ok":true}
+curl https://mon.example.com/health     # should return {"ok":true}
 ```
 
-返回 `{"ok":true}` 就成了。之后让用户配对时指定你的地址:
+If you get `{"ok":true}`, you're set. Users then point their pairing at your address:
 
 ```bash
 mon pair --relay https://mon.example.com
@@ -102,26 +108,25 @@ mon pair --relay https://mon.example.com
 
 ---
 
-## Cloudflare / CDN 注意
+## Cloudflare / CDN note
 
-如果你的域名套了 Cloudflare 等 CDN(橙云代理),它可能会拦掉**默认 UA** 的 WebSocket 升级请求,导致连不上。RunMon 的 agent 已内置 `User-Agent: runmon/x.y.z` 绕过这个问题;但如果你自己写别的客户端或调试,记得带上非默认 UA。回源要走 443(Full/Strict SSL 模式)。
+If your domain sits behind Cloudflare or another CDN (orange-cloud proxy), it may strip the WebSocket upgrade request that uses a **default User-Agent**, breaking the connection. RunMon's agent already sends `User-Agent: runmon/x.y.z` to get around this; but if you write your own client or debug by hand, remember to send a non-default UA. Origin pulls should use 443 (Full/Strict SSL mode).
 
-## 安全说明
+## Security notes
 
-- 经 relay 的业务数据全部 **ChaCha20-Poly1305 密文**,密钥只在 agent 和 App 两端,relay 只做存储转发,被入侵也只见密文。
-- 设备 token 只存哈希;配对码一次性、限时。
-- relay 建议只监听 `127.0.0.1`(如上),公网入口统一由 nginx 收口,别把 `--host 0.0.0.0` 直接暴露到公网。
+- All business data through the relay is **ChaCha20-Poly1305 ciphertext**; keys live only on the agent and the app. The relay only stores and forwards, so a compromised relay only ever sees ciphertext.
+- Device tokens are stored only as hashes; pairing codes are single-use and time-limited.
+- The relay should only listen on `127.0.0.1` (as above), with nginx as the single public entry point — don't expose `--host 0.0.0.0` directly to the internet.
 
-## 这个包不是日常入口
+## This package isn't the day-to-day entry point
 
-日常在 GPU 服务器上用的是 agent 那个包:
+What you use day to day on the GPU server is the agent package:
 
 ```bash
 pip install runmon
 ```
 
-完整介绍、手机 App 下载和快速开始见 **[项目主页](https://runmon.linxiexie.com)**
-和 **[GitHub 仓库](https://github.com/murphy977/runmon)**。
+For the full introduction, the mobile app download, and the quick start, see the **[project homepage](https://runmon.linxiexie.com)** and the **[GitHub repo](https://github.com/murphy977/runmon)**.
 
 ## License
 

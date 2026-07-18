@@ -1,68 +1,74 @@
+<div align="center">
+
+[![English](https://img.shields.io/badge/English-2563EB?style=for-the-badge)](README.md) [![简体中文](https://img.shields.io/badge/简体中文-64748B?style=for-the-badge)](README.zh-CN.md)
+
+</div>
+
 # runmon
 
-**长任务陪伴器** —— 服务器上跑训练/爬虫/长脚本时,手机第一时间知道"跑完了、挂了、还是假死了"。零侵入,不改一行训练代码。
+**Long-job companion** — when a training run, crawler, or long script is running on your server, your phone knows the moment it "finished, failed, or silently stalled." Zero-instrumentation, not a line of training code changed.
 
-## 快速开始
+## Quick start
 
 ```bash
 pip install runmon
 
-# 1. 配置通知通道(推荐 ntfy:手机装 ntfy app,订阅一个自定义 topic 即可)
+# 1. Configure a notification channel (ntfy is easiest: install the ntfy app and subscribe to a custom topic)
 mon init --ntfy-topic my-secret-topic-2333
 
-# 2. 用 mon run 包装你的命令
+# 2. Wrap your command with mon run
 mon run -- python train.py
 
-# 先试试演示任务
-mon demo            # 正常完成 → 收到 ✅ 通知
-mon demo --fail     # 模拟报错 → 收到 ⚠️ + ❌ 通知
+# Try the demo first
+mon demo            # completes normally → you get a ✅ notification
+mon demo --fail     # simulates an error → you get ⚠️ + ❌ notifications
 ```
 
-## 你会在手机上收到什么
+## What lands on your phone
 
-| 事件 | 触发条件(默认,可配) | 级别 |
+| Event | Trigger (default, configurable) | Level |
 |---|---|---|
-| ✅ 完成 | 退出码 0 | 信息 |
-| ❌ 失败 | 退出码非 0 | 严重 |
-| ⚠️ 错误输出 | 日志出现 Traceback / CUDA OOM / Segfault | 严重 |
-| 🧊 GPU 假死 | 进程活着但 GPU 利用率 <5% 持续 10 分钟 | 严重 |
-| 🤫 日志静默 | 30 分钟无新输出 | 警告 |
-| 💾 磁盘告警 | 任一挂载点使用率 >90% | 警告 |
+| ✅ Done | exit code 0 | info |
+| ❌ Failed | non-zero exit code | critical |
+| ⚠️ Error output | log shows Traceback / CUDA OOM / Segfault | critical |
+| 🧊 GPU stall | process alive but GPU utilization <5% for 10 min | critical |
+| 🤫 Log silence | no new output for 30 min | warning |
+| 💾 Disk alert | any mount point over 90% used | warning |
 
-同类事件 30 分钟内只提醒一次;通知失败自动指数退避重试(最长 1 小时),本地持久化不丢。
+The same kind of event notifies at most once per 30 minutes; failed notifications retry with exponential backoff (up to 1 hour) and are persisted locally so nothing is lost.
 
-## 常用命令
+## Common commands
 
 ```bash
-mon run --name exp1 --gpu 0,1 -- python train.py   # 命名任务并显式关联 GPU
-mon ls                                              # 任务列表(进度/耗时)
-mon status exp1                                     # 详情 + 输出尾部 + ETA/loss
-mon stop exp1                                       # 停止(SIGINT→SIGTERM→SIGKILL)
+mon run --name exp1 --gpu 0,1 -- python train.py   # name a job and bind specific GPUs
+mon ls                                              # job list (progress / elapsed)
+mon status exp1                                     # details + output tail + ETA/loss
+mon stop exp1                                       # stop (SIGINT→SIGTERM→SIGKILL)
 ```
 
-进度、ETA、loss 从 stdout 自动解析(兼容 tqdm / `Epoch x/y` / `loss=…`),无需埋点。
+Progress, ETA, and loss are parsed automatically from stdout (works with tqdm / `Epoch x/y` / `loss=…`) — no instrumentation needed.
 
-## 通知通道
+## Notification channels
 
-`mon init` 支持组合配置,可同时推多个通道:
+`mon init` accepts combinations and can push to several channels at once:
 
 ```bash
-mon init --ntfy-topic TOPIC [--ntfy-server https://你的自托管ntfy]
+mon init --ntfy-topic TOPIC [--ntfy-server https://your-self-hosted-ntfy]
 mon init --bark-key KEY                  # iOS Bark
+mon init --wecom-key WEBHOOK_URL         # WeCom (企业微信) group bot — most reliable for China
 mon init --telegram BOT_TOKEN:CHAT_ID    # Telegram bot
-mon init --webhook https://your/hook     # 通用 webhook(飞书/钉钉/自定义)
+mon init --webhook https://your/hook     # generic webhook (Feishu / DingTalk / custom)
 ```
 
-配置写在 `~/.config/runmon/config.toml`,阈值均可修改:
+Config lives in `~/.config/runmon/config.toml`; all thresholds are adjustable:
 
 ```toml
-hang_gpu_minutes = 20      # 假死判定窗口
-silence_minutes = 60       # 静默告警
+hang_gpu_minutes = 20      # GPU-stall detection window
+silence_minutes = 60       # log-silence alert
 disk_threshold_pct = 85
 ```
 
-## 当前限制(Roadmap 见仓库根 README)
+## Notes
 
-- `mon attach`(接管已在 tmux 里跑的任务)在 M3
-- 手机 App(实时面板/远程操作)在 M2,当前通知为单向
-- GPU 采集依赖 NVIDIA NVML,无 GPU 机器上自动降级(其余功能不受影响)
+- GPU sampling relies on NVIDIA NVML; on machines without a GPU it degrades gracefully (everything else keeps working).
+- The mobile app (live dashboard / remote control / interactive terminal) and `mon attach` (take over a job already running in tmux) are shipped — see the [project README](../README.md) for the full picture.
