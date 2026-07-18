@@ -45,21 +45,22 @@ class ServerLink {
   final String appToken;
   final String agentId;
   final String agentName;
+  final String alias;   // 用户在 App 里给这台服务器起的本地别名(可空,优先显示)
   final String keyB64;
 
   ServerLink({required this.relayUrl, required this.appDeviceId,
       required this.appToken, required this.agentId,
-      required this.agentName, required this.keyB64});
+      required this.agentName, this.alias = '', required this.keyB64});
 
   Map<String, dynamic> toJson() => {
         'relayUrl': relayUrl, 'appDeviceId': appDeviceId, 'appToken': appToken,
-        'agentId': agentId, 'agentName': agentName, 'keyB64': keyB64,
+        'agentId': agentId, 'agentName': agentName, 'alias': alias, 'keyB64': keyB64,
       };
 
   factory ServerLink.fromJson(Map<String, dynamic> j) => ServerLink(
       relayUrl: j['relayUrl'], appDeviceId: j['appDeviceId'],
       appToken: j['appToken'], agentId: j['agentId'],
-      agentName: j['agentName'], keyB64: j['keyB64']);
+      agentName: j['agentName'], alias: j['alias'] ?? '', keyB64: j['keyB64']);
 }
 
 /// 单台服务器的实时状态。
@@ -79,7 +80,9 @@ class AgentState {
 
   AgentState(this.link);
 
-  String get name => link.agentName.isEmpty ? link.agentId : link.agentName;
+  String get name => link.alias.isNotEmpty
+      ? link.alias
+      : (link.agentName.isEmpty ? link.agentId : link.agentName);
 }
 
 class _Conn {
@@ -270,7 +273,8 @@ class AppState extends ChangeNotifier {
   }
 
   /// 用配对载荷 {u, c, k} 认领并保存。返回错误信息,null 为成功。
-  Future<String?> pairWithPayload(String payload, String phoneName) async {
+  Future<String?> pairWithPayload(String payload, String phoneName,
+      {String alias = ''}) async {
     Map<String, dynamic> p;
     try {
       p = jsonDecode(payload.trim()) as Map<String, dynamic>;
@@ -291,7 +295,7 @@ class AppState extends ChangeNotifier {
           relayUrl: (p['u'] as String).replaceAll(RegExp(r'/+$'), ''),
           appDeviceId: claim['device_id'], appToken: claim['device_token'],
           agentId: claim['agent_id'], agentName: claim['agent_name'] ?? '',
-          keyB64: p['k']);
+          alias: alias.trim(), keyB64: p['k']);
       _attach(link);
       await _persist();
       notifyListeners();

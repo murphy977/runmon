@@ -95,14 +95,16 @@ From then on it's monitored exactly like a `mon run` job — events, live view, 
 
 `mon daemon` is the bridge to your phone: it syncs job state to the relay and receives your remote commands. **The live view in the app only works while the daemon is running.** (Notifications from `mon run` do *not* need it — those go out directly.)
 
-**Keep it alive across SSH disconnects** — otherwise it dies when you close the terminal and the phone stops seeing live data:
-```bash
-# tmux (recommended)
-tmux new -s mon
-mon daemon
-# press Ctrl+B then D to detach; come back later with:  tmux attach -t mon
+By default it runs in the **foreground** and holds the terminal. **To run it in the background** so it survives closing your SSH session:
 
-# or nohup in the background
+```bash
+mon daemon -d      # detach: runs in the background and frees the terminal
+                   # prints the pid + log path; stop it later with: kill <pid>
+```
+
+Prefer to manage it yourself? Use tmux or nohup instead:
+```bash
+tmux new -s mon; mon daemon          # Ctrl+B then D to detach; tmux attach -t mon to return
 nohup mon daemon > ~/mon-daemon.log 2>&1 &
 ```
 

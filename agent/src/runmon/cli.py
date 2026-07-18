@@ -239,7 +239,22 @@ def cmd_pair(args) -> int:
     return 1
 
 
-def cmd_daemon(_args) -> int:
+def cmd_daemon(args) -> int:
+    if getattr(args, "detach", False):
+        import subprocess
+        from .config import data_dir
+        log = data_dir() / "daemon.log"
+        log.parent.mkdir(parents=True, exist_ok=True)
+        # 重新以自身在新会话里前台启动 daemon,脱离当前终端(关 SSH 也不停)
+        with open(log, "ab") as f:
+            proc = subprocess.Popen(
+                [sys.executable, "-m", "runmon", "daemon"],
+                stdout=f, stderr=f, stdin=subprocess.DEVNULL,
+                start_new_session=True)
+        print(f"[mon daemon] 已在后台运行 (pid {proc.pid})")
+        print(f"  日志:{log}")
+        print(f"  停止:kill {proc.pid}")
+        return 0
     import asyncio
     from .relay_client import Daemon
     try:
@@ -353,6 +368,8 @@ def main(argv: list[str] | None = None) -> int:
     p_pair.set_defaults(func=cmd_pair)
 
     p_daemon = sub.add_parser("daemon", help="常驻守护:同步状态到 relay 并接收指令")
+    p_daemon.add_argument("-d", "--detach", action="store_true",
+                          help="退到后台运行,不占用终端(关 SSH 也不停)")
     p_daemon.set_defaults(func=cmd_daemon)
 
     p_attach = sub.add_parser("attach", help="接管已在 tmux 里跑的任务")

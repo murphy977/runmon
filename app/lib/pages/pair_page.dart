@@ -24,7 +24,7 @@ class PairPage extends StatefulWidget {
 
 class _PairPageState extends State<PairPage> {
   final _payload = TextEditingController();
-  final _name = TextEditingController(text: _defaultDeviceName());
+  final _name = TextEditingController();   // 用户给这台服务器起的本地别名(可空)
   bool _busy = false;
   String? _error;
 
@@ -42,8 +42,10 @@ class _PairPageState extends State<PairPage> {
       _busy = true;
       _error = null;
     });
-    final err = await appState.pairWithPayload(_payload.text,
-        _name.text.trim().isEmpty ? 'phone' : _name.text.trim());
+    // _name 是用户给这台【服务器】起的本地别名;手机名自动用系统名,发给服务器端显示
+    final err = await appState.pairWithPayload(
+        _payload.text, _defaultDeviceName(),
+        alias: _name.text.trim());
     if (!mounted) return;
     if (err == null) {
       Navigator.pop(context);
@@ -75,15 +77,15 @@ class _PairPageState extends State<PairPage> {
                   style: sans(size: 14, color: Rm.inkSoft, height: 1.6)),
               const SizedBox(height: 28),
 
-              // 这台设备的名字
-              const SectionLabel('这台设备'),
+              // 给这台服务器起个本地别名(App 里显示)
+              const SectionLabel('这台服务器'),
               TextField(
                 controller: _name,
                 style: sans(size: 15, weight: FontWeight.w500),
-                decoration: _decor(hint: '给它起个名'),
+                decoration: _decor(hint: '给这台服务器起个名(可留空)'),
               ),
               const SizedBox(height: 6),
-              Text('配对后显示在服务器端,方便你认出是哪台。',
+              Text('配对后在 App 里用这个名字显示,方便区分多台服务器;留空则用服务器主机名。',
                   style: sans(size: 12, color: Rm.inkFaint)),
               const SizedBox(height: 28),
 

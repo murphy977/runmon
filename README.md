@@ -10,7 +10,7 @@
 
 > A training run errors out halfway through and the GPU sits idle for hours with nobody noticing; you keep meaning to SSH in and check — at dinner, in bed. RunMon exists to kill that feeling.
 
-`v1.0.2` · Python + Flutter · MIT · end-to-end encrypted
+`v1.0.3` · Python + Flutter · MIT · end-to-end encrypted
 
 ---
 
@@ -44,7 +44,7 @@ mon run -- python train.py   # your original command, just wrapped
 
 Open the app and you'll see the live terminal, GPU/CPU/memory curves, progress/ETA, and buttons to stop / re-run / pull logs / open a terminal. Run `mon demo` first to test the whole chain. Already have a job in tmux? Use `mon attach` instead of `mon run`.
 
-> **Tip:** run `mon daemon` inside `tmux` (or with `nohup`) so it survives closing your SSH session.
+> **Tip:** `mon daemon` runs in the foreground; add `-d` (`mon daemon -d`) to detach it to the background, or run it in `tmux` / `nohup`, so it survives closing your SSH session.
 
 ### Just want notifications? (no app needed)
 

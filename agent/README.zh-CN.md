@@ -95,14 +95,16 @@ mon attach            # 接管当前 tmux 窗格里的任务
 
 `mon daemon` 是通往手机的桥梁:把任务状态同步到 relay,并接收你的远程指令。**App 里的实时画面只有在 daemon 开着时才有。**(`mon run` 的通知**不**依赖它,那是直发的。)
 
-**让它断开 SSH 也不停**——否则你一关终端它就死了,手机就看不到实时数据:
-```bash
-# tmux(推荐)
-tmux new -s mon
-mon daemon
-# 按 Ctrl+B 再按 D 退出;下次回来:  tmux attach -t mon
+默认它是**前台**运行、占着终端。**想让它退到后台**(关 SSH 也不停):
 
-# 或 nohup 后台
+```bash
+mon daemon -d      # 后台运行,立刻把终端还给你
+                   # 会打印 pid 和日志路径;之后停止:kill <pid>
+```
+
+想自己管?也可以用 tmux 或 nohup:
+```bash
+tmux new -s mon; mon daemon          # Ctrl+B 再按 D 退出;tmux attach -t mon 回来
 nohup mon daemon > ~/mon-daemon.log 2>&1 &
 ```
 

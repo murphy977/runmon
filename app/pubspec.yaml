@@ -1,7 +1,7 @@
 name: runmon_app
 description: "RunMon — 长任务陪伴器手机端:实时查看服务器训练任务,接收事件,远程处理。"
 publish_to: 'none'
-version: 1.0.2+2
+version: 1.0.3+3
 
 environment:
   sdk: ^3.12.2

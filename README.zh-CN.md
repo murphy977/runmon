@@ -10,7 +10,7 @@
 
 > 跑了几个小时的训练中途报错,GPU 空闲半天没人知道;吃饭睡觉还惦记着 ssh 上去看一眼——RunMon 就是为了消灭这件事。
 
-`v1.0.2` · Python + Flutter · MIT · 端到端加密
+`v1.0.3` · Python + Flutter · MIT · 端到端加密
 
 ---
 
@@ -44,7 +44,7 @@ mon run -- python train.py   # 你原本的命令,前面包一层
 
 打开 App,就能看到实时终端、GPU/CPU/内存曲线、进度/ETA,以及停止 / 重跑 / 拉日志 / 开终端的按钮。第一次先跑 `mon demo` 验证整条链路。已经在 tmux 里跑着的任务?用 `mon attach` 代替 `mon run`。
 
-> **小贴士:** 把 `mon daemon` 放 `tmux`(或用 `nohup`)里跑,断开 SSH 也不停。
+> **小贴士:** `mon daemon` 默认前台运行;加 `-d`(`mon daemon -d`)让它退到后台,或放 `tmux` / `nohup` 里跑,断开 SSH 也不停。
 
 ### 只想要通知?(不用装 App)
 
