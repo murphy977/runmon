@@ -24,20 +24,37 @@
 - 🔗 **Zero-instrumentation** — wrap a new job with `mon run -- python train.py`; take over a job that's already been running in tmux for ten hours with `mon attach`
 - 🔒 **End-to-end encrypted · self-hosted** — training logs and commands are ciphertext end to end, the relay is your own, data never passes through any third party
 
-## Quick start (3 steps)
+## Quick start
 
-**1. On the server — install the agent, pair, run your job**
+### Watch a job live on your phone
+
+**1. Install the app** — grab `RunMon-arm64.apk` from [Releases](../../releases) (modern Android is all arm64).
+
+**2. On the server — install, pair, keep the connection alive**
 ```bash
 pip install runmon
-mon pair                    # prints a QR code; uses a public relay by default, add --relay to self-host for production
-mon run -- python train.py  # your original command, just wrapped
+mon pair       # prints a QR code — scan it in the app (uses a public relay by default)
+mon daemon     # keep this running; the phone sees live data only while it's up
 ```
 
-**2. Install the app** — grab `RunMon-arm64.apk` from [Releases](../../releases) (modern Android is all arm64)
+**3. Run your job** (in another shell)
+```bash
+mon run -- python train.py   # your original command, just wrapped
+```
 
-**3. Scan to pair** — scan the QR code printed in the server terminal, and you're done.
+Open the app and you'll see the live terminal, GPU/CPU/memory curves, progress/ETA, and buttons to stop / re-run / pull logs / open a terminal. Run `mon demo` first to test the whole chain. Already have a job in tmux? Use `mon attach` instead of `mon run`.
 
-After that, keep `mon daemon` running to hold the connection, or use `mon logs -f` on your computer to follow any job (background re-runs included).
+> **Tip:** run `mon daemon` inside `tmux` (or with `nohup`) so it survives closing your SSH session.
+
+### Just want notifications? (no app needed)
+
+```bash
+pip install runmon
+mon init --wecom-key <webhook>   # or --bark-key / --ntfy-topic / --telegram
+mon run -- python train.py       # phone buzzes on done / fail / stall / …
+```
+
+📖 **Full command reference (`run` · `attach` · `daemon` · `pair` · `logs` · …):** [`agent/README.md`](agent/README.md).
 
 ## Architecture
 

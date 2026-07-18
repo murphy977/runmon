@@ -24,20 +24,37 @@
 - 🔗 **零侵入接入** —— 新任务 `mon run -- python train.py` 包一层;已在 tmux 里跑了十小时的任务 `mon attach` 直接接管
 - 🔒 **端到端加密 · 自托管** —— 训练日志和命令全程密文,中转服务自己部署,数据不过任何第三方
 
-## 快速开始(三步)
+## 快速开始
 
-**1. 服务器上装 agent、配对、跑任务**
+### 在手机上看任务实时画面
+
+**1. 手机装 App** —— 到 [Releases](../../releases) 下载 `RunMon-arm64.apk`(现代安卓都是 arm64)。
+
+**2. 服务器上:装 agent、配对、保持连接**
 ```bash
 pip install runmon
-mon pair                    # 打印二维码;默认用公共体验中转,生产可 --relay 自建
-mon run -- python train.py  # 你原本的命令,前面包一层
+mon pair       # 打印二维码 —— 用 App 扫(默认用公共体验中转)
+mon daemon     # 保持开着;手机只有在它开着时才能看到实时数据
 ```
 
-**2. 手机装 App** —— 到 [Releases](../../releases) 下载 `RunMon-arm64.apk`(现代安卓都是 arm64)
+**3. 跑你的任务**(另开一个终端)
+```bash
+mon run -- python train.py   # 你原本的命令,前面包一层
+```
 
-**3. App 里扫码配对** —— 扫服务器终端打印的二维码,完事。
+打开 App,就能看到实时终端、GPU/CPU/内存曲线、进度/ETA,以及停止 / 重跑 / 拉日志 / 开终端的按钮。第一次先跑 `mon demo` 验证整条链路。已经在 tmux 里跑着的任务?用 `mon attach` 代替 `mon run`。
 
-之后 `mon daemon` 常驻保持连接,或 `mon logs -f` 在电脑上跟随任意任务(含后台重跑)。
+> **小贴士:** 把 `mon daemon` 放 `tmux`(或用 `nohup`)里跑,断开 SSH 也不停。
+
+### 只想要通知?(不用装 App)
+
+```bash
+pip install runmon
+mon init --wecom-key <webhook>   # 或 --bark-key / --ntfy-topic / --telegram
+mon run -- python train.py       # 完成 / 失败 / 假死 / … 时手机响
+```
+
+📖 **完整命令参考(`run` · `attach` · `daemon` · `pair` · `logs` · …):** [`agent/README.zh-CN.md`](agent/README.zh-CN.md)。
 
 ## 架构
 
