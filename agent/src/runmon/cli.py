@@ -30,6 +30,40 @@ def cmd_run(args) -> int:
     return wrapper.execute()
 
 
+def cmd_wait(args) -> int:
+    from . import sampler
+    command = _strip_dashdash(args.command)
+    if not sampler.gpu_available():
+        print("错误:未检测到 NVIDIA GPU(mon wait 需要在装了 NVIDIA 驱动的服务器上运行)",
+              file=sys.stderr)
+        return 1
+    if args.gpus < 1:
+        print("错误:--gpus 至少为 1", file=sys.stderr)
+        return 2
+    if args.detach:
+        import subprocess
+        from .config import data_dir
+        argv = [sys.executable, "-m", "runmon", "wait",
+                "--gpus", str(args.gpus), "--hold", str(args.hold)]
+        if args.free_gb is not None:
+            argv += ["--free-gb", str(args.free_gb)]
+        if args.name:
+            argv += ["--name", args.name]
+        if command:
+            argv += ["--"] + command
+        log = data_dir() / f"wait-{time.strftime('%Y%m%d-%H%M%S')}.log"
+        with open(log, "ab") as f:
+            proc = subprocess.Popen(argv, stdout=f, stderr=f,
+                                    stdin=subprocess.DEVNULL, start_new_session=True)
+        print(f"[mon wait] 已在后台蹲卡 (pid {proc.pid})")
+        print(f"  日志:{log}")
+        print(f"  停止:kill {proc.pid}")
+        return 0
+    from .gpuwait import GpuWaiter, WaitSpec
+    spec = WaitSpec(count=args.gpus, free_gb=args.free_gb, hold_minutes=args.hold)
+    return GpuWaiter(spec, command=command, name=args.name).execute()
+
+
 def _duration(run) -> str:
     end = run.ended_at or time.time()
     return format_duration(end - run.started_at)
@@ -336,6 +370,19 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("--gpu", default="", help="显式关联 GPU 序号,如 0,1")
     p_run.add_argument("command", nargs=argparse.REMAINDER)
     p_run.set_defaults(func=cmd_run)
+
+    p_wait = sub.add_parser("wait", help="蹲 GPU 空位:满足即通知手机;带命令则自动启动(预约执行)")
+    p_wait.add_argument("--gpus", type=int, default=1, help="需要几张卡(默认 1)")
+    p_wait.add_argument("--free-gb", type=float, default=None,
+                        help="每张卡需要的空闲显存 GB(不填则要求整卡空闲)")
+    p_wait.add_argument("--hold", type=float, default=3.0,
+                        help="条件需持续满足的分钟数,防假空闲(默认 3,0 为立即)")
+    p_wait.add_argument("--name", help="预约任务名(默认取命令本身)")
+    p_wait.add_argument("-d", "--detach", action="store_true",
+                        help="退到后台蹲卡,不占用终端(关 SSH 也不停)")
+    p_wait.add_argument("command", nargs=argparse.REMAINDER,
+                        help="等到后要执行的命令,如:mon wait --gpus 2 -- python train.py")
+    p_wait.set_defaults(func=cmd_wait)
 
     p_ls = sub.add_parser("ls", help="列出任务")
     p_ls.set_defaults(func=cmd_ls)

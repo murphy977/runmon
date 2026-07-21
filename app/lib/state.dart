@@ -313,6 +313,15 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 删除一条事件记录(仅手机本地,事件本就只存内存)。
+  void removeEvent(String agentId, Map<String, dynamic> ev) {
+    final a = agents[agentId];
+    if (a == null) return;
+    a.events.remove(ev);
+    a.eventKeys.remove('${ev['title']}|${ev['body']}|${ev['run_id']}');
+    notifyListeners();
+  }
+
   Future<Map<String, dynamic>> sendCmd(
           String agentId, String op, String runId,
           [Map<String, dynamic>? args]) =>

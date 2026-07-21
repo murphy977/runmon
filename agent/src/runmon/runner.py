@@ -181,8 +181,13 @@ class RunWrapper:
         self._last_flush = now
 
     def _monitor(self, stop: threading.Event) -> None:
+        ticks = 0
         while not stop.wait(self.config.sample_interval_s):
             try:
+                ticks += 1
+                if ticks % 12 == 0:  # ~每分钟重读配置:手机端改的阈值对运行中任务也生效
+                    self.config = Config.load()
+                    self.engine.config = self.config
                 now = time.time()
                 samples = sampler.sample_gpus()
                 if self.gpu_indices:

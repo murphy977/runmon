@@ -171,6 +171,17 @@ class RunStore:
                                (run_id, etype, ts, payload))
             self._conn.commit()
 
+    def delete_run(self, run_id: str) -> None:
+        with self._lock:
+            self._conn.execute("DELETE FROM runs WHERE id=?", (run_id,))
+            self._conn.execute("DELETE FROM events WHERE run_id=?", (run_id,))
+            self._conn.commit()
+
+    def max_event_id(self) -> int:
+        with self._lock:
+            row = self._conn.execute("SELECT MAX(id) AS m FROM events").fetchone()
+        return row["m"] or 0
+
     def events_since(self, last_id: int, limit: int = 200) -> list[sqlite3.Row]:
         with self._lock:
             return self._conn.execute(

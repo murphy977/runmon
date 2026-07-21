@@ -10,7 +10,7 @@
 
 > 跑了几个小时的训练中途报错,GPU 空闲半天没人知道;吃饭睡觉还惦记着 ssh 上去看一眼——RunMon 就是为了消灭这件事。
 
-`v1.0.5` · Python + Flutter · MIT · 端到端加密
+`v1.0.6` · Python + Flutter · MIT · 端到端加密
 
 ---
 
@@ -20,6 +20,7 @@
 - 📈 **资源曲线** —— GPU 利用率 / 显存 / CPU / 内存,实时曲线
 - 🔔 **六类事件必达** —— 完成、失败、报错输出、**GPU 假死(进程活着却不干活)**、日志静默、磁盘写满;通道走 **企业微信** / Bark / ntfy / Telegram / webhook,App 被系统杀了也收得到
 - 🎮 **远程操作** —— 停止、重跑、拉完整日志、跑完自动关机(租卡党省钱)
+- 🎯 **蹲卡 & 预约执行** —— App 里勾选要蹲的卡、设好空闲门槛,GPU 空出来手机马上响;还能预约一条命令,等到卡自动开跑(终端党用 `mon wait` 一样蹲)
 - 💻 **完整交互终端** —— 手机上开一个真终端跑任意命令,和 SSH 一样
 - 🔗 **零侵入接入** —— 新任务 `mon run -- python train.py` 包一层;已在 tmux 里跑了十小时的任务 `mon attach` 直接接管
 - 🔒 **端到端加密 · 自托管** —— 训练日志和命令全程密文,中转服务自己部署,数据不过任何第三方
@@ -45,6 +46,8 @@ mon run -- python train.py   # 你原本的命令,前面包一层
 打开 App,就能看到实时终端、GPU/CPU/内存曲线、进度/ETA,以及停止 / 重跑 / 拉日志 / 开终端的按钮。第一次先跑 `mon demo` 验证整条链路。已经在 tmux 里跑着的任务?用 `mon attach` 代替 `mon run`。
 
 > **小贴士:** `mon daemon` 默认前台运行;加 `-d`(`mon daemon -d`)让它退到后台,或放 `tmux` / `nohup` 里跑,断开 SSH 也不停。
+>
+> **conda 用户:** `mon` 是系统级工具,不用装进每个虚拟环境 —— 用 `pipx install runmon` 装一次全局可用,切换环境不用重装。
 
 ### 只想要通知?(不用装 App)
 
@@ -54,7 +57,16 @@ mon init --wecom-key <webhook>   # 或 --bark-key / --ntfy-topic / --telegram
 mon run -- python train.py       # 完成 / 失败 / 假死 / … 时手机响
 ```
 
-📖 **完整命令参考(`run` · `attach` · `daemon` · `pair` · `logs` · …):** [`agent/README.zh-CN.md`](agent/README.zh-CN.md)。
+### 卡都被占着?蹲个空位
+
+```bash
+mon wait --gpus 2 --free-gb 30 -d          # 2 张卡各空出 30GB 显存时,手机马上响(-d 后台蹲)
+mon wait --gpus 2 -- python train.py       # 等到 2 张整卡空闲,自动开跑(帮你设好 CUDA_VISIBLE_DEVICES)
+```
+
+条件需**持续满足 3 分钟**才触发(`--hold` 可调),不会被别人任务间隙的假空闲骗到。
+
+📖 **完整命令参考(`run` · `wait` · `attach` · `daemon` · `pair` · `logs` · …):** [`agent/README.zh-CN.md`](agent/README.zh-CN.md)。
 
 ## 架构
 

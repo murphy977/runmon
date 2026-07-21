@@ -1,13 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../state.dart';
+import '../swipe_delete.dart';
 import '../ui.dart';
+import 'gpu_watch_sheet.dart';
 import 'run_detail_page.dart';
 import '../terminal_gate.dart';
 
-class RunsPage extends StatelessWidget {
+class RunsPage extends StatefulWidget {
   final String agentId;
   const RunsPage({super.key, required this.agentId});
+
+  @override
+  State<RunsPage> createState() => _RunsPageState();
+}
+
+class _RunsPageState extends State<RunsPage> {
+  final _swipeCtrl = SwipeDeleteController();
+
+  String get agentId => widget.agentId;
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +30,14 @@ class RunsPage extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(title: Text(agent.name), actions: [
             IconButton(
+              tooltip: '蹲卡提醒',
+              icon: const Icon(Icons.hourglass_top_rounded),
+              onPressed: agent.online &&
+                      ((agent.hb?['gpus'] as List?)?.isNotEmpty ?? false)
+                  ? () => showGpuWatchSheet(context, agentId)
+                  : null,
+            ),
+            IconButton(
               tooltip: '终端',
               icon: const Icon(Icons.terminal_rounded),
               onPressed: agent.online
@@ -27,14 +46,23 @@ class RunsPage extends StatelessWidget {
             ),
             const SizedBox(width: 8),
           ]),
-          body: Column(children: [
-            if (agent.hbHistory.length >= 2)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                child: _MetricsHistoryCard(agent: agent),
-              ),
-            Expanded(child: _runList(agent)),
-          ]),
+          body: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (_) => _swipeCtrl.pagePointerDown(),
+            child: Column(children: [
+              if (agent.hb?['gpu_watch'] != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: GpuWatchBanner(agentId: agentId),
+                ),
+              if (agent.hbHistory.length >= 2)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: _MetricsHistoryCard(agent: agent),
+                ),
+              Expanded(child: _runList(agent)),
+            ]),
+          ),
         );
       },
     );
@@ -65,12 +93,28 @@ class RunsPage extends StatelessWidget {
                   itemCount: agent.runs.length,
                   itemBuilder: (context, i) {
                     final r = agent.runs[i];
+                    final running = (r['status'] as String?) == 'running';
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _RunCard(agentId: agentId, run: r),
+                      child: SwipeDeleteRow(
+                        rowKey: r['id'] as String,
+                        controller: _swipeCtrl,
+                        enabled: !running, // 运行中的任务不允许删,先停止
+                        onDelete: () => _deleteRun(r['id'] as String),
+                        child: _RunCard(agentId: agentId, run: r),
+                      ),
                     );
                   },
                 );
+  }
+
+  Future<void> _deleteRun(String runId) async {
+    final r = await appState.sendCmd(agentId, 'delete_run', runId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(r['ok'] == true
+            ? '已删除(服务器上的记录和日志一并清掉)'
+            : '删除失败:${r['error'] ?? '未知错误'}')));
   }
 }
 

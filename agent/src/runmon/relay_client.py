@@ -131,6 +131,38 @@ def handle_command(store: RunStore, cmd: dict) -> dict:
         if run is None:
             return {"ok": False, "op": op, "error": "run not found"}
         return _rerun(run)
+    if op == "delete_run":
+        if run is None:
+            return {"ok": False, "op": op, "error": "run not found"}
+        if run.status == "running":
+            return {"ok": False, "op": op, "error": "任务运行中,先停止再删除"}
+        for p in ([run.log_path] if run.log_path else []):
+            for f in (Path(p), Path(p).parent / f"{run.id}.env.json"):
+                try:
+                    f.unlink()
+                except OSError:
+                    pass
+        store.delete_run(run.id)
+        return {"ok": True, "op": op, "run_id": run.id}
+    if op == "config_set":
+        # 白名单配置项:目前只放开磁盘告警阈值
+        try:
+            pct = int(args.get("disk_threshold_pct"))
+        except (TypeError, ValueError):
+            return {"ok": False, "op": op, "error": "invalid disk_threshold_pct"}
+        if not 50 <= pct <= 99:
+            return {"ok": False, "op": op, "error": "阈值需在 50–99 之间"}
+        cfg = Config.load()
+        cfg.disk_threshold_pct = pct
+        cfg.save()
+        return {"ok": True, "op": op, "disk_threshold_pct": pct}
+    if op == "gpu_watch_set":
+        from .gpuwait import set_watch
+        return {"op": op, **set_watch(args)}
+    if op == "gpu_watch_cancel":
+        from .gpuwait import clear_watch
+        clear_watch()
+        return {"ok": True, "op": op}
     return {"ok": False, "error": f"unknown op: {op}"}
 
 
@@ -148,6 +180,21 @@ class Daemon:
         self._pty = None
         self._ws = None
         self._sync_state = SyncState()  # 跨重连保留,避免重发全部历史事件
+        # daemon 重启只同步新事件:重放历史会让手机炸通知,还会被 MIUI 判为骚扰降级
+        self._sync_state.last_event_id = self.store.max_event_id()
+        from .gpuwait import GpuWatchManager
+        self._watch_mgr = GpuWatchManager(self.store, self.config)
+
+    def _heartbeat(self) -> dict:
+        """心跳 + 蹲卡评估共用同一次 GPU 采样。"""
+        hb = heartbeat_payload()
+        try:
+            st = self._watch_mgr.poll(hb["gpus"])
+            if st is not None:
+                hb["gpu_watch"] = st
+        except Exception:
+            pass  # 蹲卡故障不影响心跳
+        return hb
 
     def ws_url(self) -> str:
         u = self.url.replace("https://", "wss://").replace("http://", "ws://")
@@ -251,6 +298,6 @@ class Daemon:
                 await ws.send(json.dumps(m))
             if time.time() - last_hb >= HEARTBEAT_INTERVAL:
                 last_hb = time.time()
-                hb = await asyncio.to_thread(heartbeat_payload)
+                hb = await asyncio.to_thread(self._heartbeat)
                 await ws.send(json.dumps({"t": "hb", "enc": encrypt(hb, self.key)}))
             await asyncio.sleep(SYNC_INTERVAL)

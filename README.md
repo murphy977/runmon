@@ -10,7 +10,7 @@
 
 > A training run errors out halfway through and the GPU sits idle for hours with nobody noticing; you keep meaning to SSH in and check — at dinner, in bed. RunMon exists to kill that feeling.
 
-`v1.0.5` · Python + Flutter · MIT · end-to-end encrypted
+`v1.0.6` · Python + Flutter · MIT · end-to-end encrypted
 
 ---
 
@@ -20,6 +20,7 @@
 - 📈 **Resource curves** — GPU utilization / VRAM / CPU / memory, as live charts
 - 🔔 **Six event types, guaranteed delivery** — done, failed, error output, **GPU stall (process alive but doing no work)**, log silence, disk full; delivered over **WeCom (企业微信)** / Bark / ntfy / Telegram / webhook — you still get them even if the OS kills the app
 - 🎮 **Remote control** — stop, re-run, pull full logs, auto-shutdown on finish (saves money on rented GPUs)
+- 🎯 **Camp for GPUs & reserve a run** — tick the cards you want in the app and set a free-VRAM threshold; your phone buzzes the moment they free up, and an attached command auto-starts your job (terminal folks get `mon wait`)
 - 💻 **Full interactive terminal** — open a real terminal on your phone and run any command, just like SSH
 - 🔗 **Zero-instrumentation** — wrap a new job with `mon run -- python train.py`; take over a job that's already been running in tmux for ten hours with `mon attach`
 - 🔒 **End-to-end encrypted · self-hosted** — training logs and commands are ciphertext end to end, the relay is your own, data never passes through any third party
@@ -45,6 +46,8 @@ mon run -- python train.py   # your original command, just wrapped
 Open the app and you'll see the live terminal, GPU/CPU/memory curves, progress/ETA, and buttons to stop / re-run / pull logs / open a terminal. Run `mon demo` first to test the whole chain. Already have a job in tmux? Use `mon attach` instead of `mon run`.
 
 > **Tip:** `mon daemon` runs in the foreground; add `-d` (`mon daemon -d`) to detach it to the background, or run it in `tmux` / `nohup`, so it survives closing your SSH session.
+>
+> **conda users:** `mon` is a system-level tool — no need to install it into every virtual env. `pipx install runmon` installs it once, globally available, no reinstalling when you switch envs.
 
 ### Just want notifications? (no app needed)
 
@@ -54,7 +57,16 @@ mon init --wecom-key <webhook>   # or --bark-key / --ntfy-topic / --telegram
 mon run -- python train.py       # phone buzzes on done / fail / stall / …
 ```
 
-📖 **Full command reference (`run` · `attach` · `daemon` · `pair` · `logs` · …):** [`agent/README.md`](agent/README.md).
+### All GPUs taken? Camp a free slot
+
+```bash
+mon wait --gpus 2 --free-gb 30 -d          # phone buzzes when 2 cards each have 30GB free (-d = background)
+mon wait --gpus 2 -- python train.py       # wait for 2 fully-idle cards, then auto-start (CUDA_VISIBLE_DEVICES set for you)
+```
+
+The condition must **hold for 3 minutes** before firing (tune with `--hold`), so a brief gap between someone else's jobs won't fool it.
+
+📖 **Full command reference (`run` · `wait` · `attach` · `daemon` · `pair` · `logs` · …):** [`agent/README.md`](agent/README.md).
 
 ## Architecture
 

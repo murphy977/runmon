@@ -97,3 +97,12 @@ def test_event_payload_and_since(tmp_path):
     assert len(rows) == 2
     assert rows[0]["payload"] == '{"title":"x"}' and rows[1]["payload"] is None
     assert s.events_since(rows[0]["id"])[0]["type"] == "completed"
+
+
+def test_max_event_id(tmp_path):
+    from runmon.store import RunStore
+    store = RunStore(tmp_path / "m.db")
+    assert store.max_event_id() == 0
+    store.record_event(None, "test", 1.0, payload="{}")
+    store.record_event(None, "test", 2.0, payload="{}")
+    assert store.max_event_id() == 2

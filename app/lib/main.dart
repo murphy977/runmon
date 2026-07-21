@@ -151,7 +151,7 @@ class _EmptyHome extends StatelessWidget {
                     style: mono(size: 13, color: Rm.terminalText, height: 1.7)),
               ),
               const SizedBox(height: 22),
-              Text('然后点右下角「配对服务器」,粘贴配对载荷。',
+              Text('然后点右下角「添加服务器」,扫码或粘贴配对载荷。',
                   style: sans(size: 13.5, color: Rm.inkFaint)),
             ],
           ),

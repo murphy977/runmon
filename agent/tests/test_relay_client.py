@@ -97,3 +97,36 @@ def test_handle_shutdown_after(store):
     handle_command(store, {"op": "shutdown_after", "run_id": run.id,
                            "args": {"enabled": False}})
     assert store.get_run(run.id).shutdown_after == 0
+
+
+def test_handle_delete_run(store, tmp_path):
+    log = tmp_path / "d.log"
+    log.write_text("x")
+    run = store.create_run(name="old", command="c", cwd="", log_path=str(log))
+    env = log.parent / f"{run.id}.env.json"
+    env.write_text("{}")
+    # 运行中不让删
+    store.update_run(run.id, status="running")
+    assert handle_command(store, {"op": "delete_run", "run_id": run.id})["ok"] is False
+    # 已结束 → 删记录 + 日志 + 环境快照
+    store.update_run(run.id, status="completed")
+    res = handle_command(store, {"op": "delete_run", "run_id": run.id})
+    assert res["ok"] is True
+    assert store.get_run(run.id) is None
+    assert not log.exists() and not env.exists()
+    # 不存在
+    assert handle_command(store, {"op": "delete_run", "run_id": "nope"})["ok"] is False
+
+
+def test_handle_config_set(store, tmp_path, monkeypatch):
+    monkeypatch.setenv("RUNMON_CONFIG", str(tmp_path / "cfg.toml"))
+    from runmon.config import Config
+    res = handle_command(store, {"op": "config_set",
+                                 "args": {"disk_threshold_pct": 85}})
+    assert res["ok"] is True
+    assert Config.load().disk_threshold_pct == 85
+    assert handle_command(store, {"op": "config_set",
+                                  "args": {"disk_threshold_pct": 30}})["ok"] is False
+    assert handle_command(store, {"op": "config_set",
+                                  "args": {"disk_threshold_pct": "x"}})["ok"] is False
+    assert Config.load().disk_threshold_pct == 85  # 非法值不写入

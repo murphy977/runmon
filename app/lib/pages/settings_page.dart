@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../settings.dart';
+import '../state.dart';
 import '../ui.dart';
 import '../update.dart';
 
@@ -76,13 +77,28 @@ class SettingsPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Column(children: [
                 for (final e in eventTypeLabels.entries)
-                  SwitchListTile(
-                    dense: true,
-                    title: Text(e.value, style: sans(size: 14.5)),
-                    value: !appSettings.mutedTypes.contains(e.key),
-                    activeThumbColor: Rm.pearDeep,
-                    onChanged: (v) => appSettings.setTypeNotify(e.key, v),
-                  ),
+                  if (e.key == 'disk_full')
+                    ListTile(
+                      dense: true,
+                      title: Text(e.value, style: sans(size: 14.5)),
+                      subtitle: Text(
+                          '使用率 ≥${appSettings.diskThresholdPct}% 时告警 · 点击调整阈值',
+                          style: sans(size: 12, color: Rm.inkFaint)),
+                      trailing: Switch(
+                        value: !appSettings.mutedTypes.contains(e.key),
+                        activeThumbColor: Rm.pearDeep,
+                        onChanged: (v) => appSettings.setTypeNotify(e.key, v),
+                      ),
+                      onTap: () => _diskThresholdDialog(context),
+                    )
+                  else
+                    SwitchListTile(
+                      dense: true,
+                      title: Text(e.value, style: sans(size: 14.5)),
+                      value: !appSettings.mutedTypes.contains(e.key),
+                      activeThumbColor: Rm.pearDeep,
+                      onChanged: (v) => appSettings.setTypeNotify(e.key, v),
+                    ),
               ]),
             ),
             const SizedBox(height: 16),
@@ -133,6 +149,50 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// 磁盘告警阈值:存 App 侧,保存时下发到所有在线服务器(agent 配置持久化)。
+  Future<void> _diskThresholdDialog(BuildContext context) async {
+    var v = appSettings.diskThresholdPct.toDouble();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('磁盘告警阈值'),
+          content: Column(mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('任一挂载点使用率 ≥ ${v.round()}% 时推送告警',
+                style: sans(size: 13.5, color: Rm.inkSoft)),
+            Slider(
+              value: v, min: 50, max: 99, divisions: 49,
+              activeColor: Rm.pearDeep,
+              label: '${v.round()}%',
+              onChanged: (x) => setState(() => v = x),
+            ),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(context, true),
+                child: const Text('保存并同步')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+    await appSettings.setDiskThreshold(v.round());
+    var synced = 0;
+    for (final a in appState.agents.values) {
+      if (!a.connected) continue;
+      final r = await appState.sendCmd(a.link.agentId, 'config_set', '',
+          {'disk_threshold_pct': v.round()});
+      if (r['ok'] == true) synced++;
+    }
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(synced > 0
+            ? '阈值已同步到 $synced 台服务器'
+            : '已保存;服务器都不在线,连上后再进来点一次「保存并同步」')));
   }
 
   Future<void> _pick(BuildContext context, bool isStart) async {

@@ -18,6 +18,8 @@ pip install runmon
 
 需要 Python ≥ 3.10。GPU 指标依赖 NVIDIA NVML;没有 GPU 的机器上自动降级(其余功能不受影响)。
 
+> **conda 用户:** `mon` 是系统级工具,不用装进每个虚拟环境 —— 用 `pipx install runmon` 装一次全局可用,切换环境不用重装。
+
 ---
 
 ## 两种用法
@@ -65,6 +67,7 @@ mon run -- python train.py
 | 命令 | 作用 |
 |---|---|
 | `mon run -- <命令>` | 包装并监控一个命令(日常主力) |
+| `mon wait` | 蹲 GPU 空位:空出来手机响;带命令则等到后自动开跑(预约执行) |
 | `mon attach` | 接管已经在 tmux 里跑的任务 —— 不用重启 |
 | `mon daemon` | 保持与手机的实时连接 |
 | `mon pair` | 与 RunMon App 配对(打印二维码) |
@@ -82,6 +85,19 @@ mon run -- python train.py                          # 最简单 —— 你的命
 mon run --name exp1 --gpu 0,1 -- python train.py    # 命名任务 + 显式关联 GPU
 ```
 进度、ETA、loss 从 stdout 自动解析(兼容 tqdm / `Epoch x/y` / `loss=…`),无需埋点。先用 `mon demo` / `mon demo --fail` 看看效果。
+
+### `mon wait` —— 蹲卡 & 预约执行
+
+卡都被占着?让 RunMon 帮你盯,空出来第一时间手机响;带上命令还能等到后直接开跑:
+
+```bash
+mon wait --gpus 2 --free-gb 30 -d       # 2 张卡各空出 30GB 显存 → 手机马上响(-d 后台蹲)
+mon wait --gpus 2 -- python train.py    # 等到 2 张整卡空闲 → 自动开跑,帮你设好 CUDA_VISIBLE_DEVICES
+```
+
+- 不带 `--free-gb` 时要求**整卡空闲**(利用率 ≤10% 且显存占用 ≤5%);带上则只看空闲显存够不够(可与他人共卡)
+- 条件需**持续满足 3 分钟**才触发(`--hold` 调整,0 为立即),别人任务间隙的假空闲骗不到它
+- 预约启动的任务就是一个普通 `mon run`:实时画面、事件通知、远程操作全都有
 
 ### `mon attach` —— 接管 tmux 里的任务
 

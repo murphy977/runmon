@@ -18,6 +18,8 @@ pip install runmon
 
 Requires Python ≥ 3.10. GPU metrics use NVIDIA NVML; on a machine without a GPU it degrades gracefully (everything else keeps working).
 
+> **conda users:** `mon` is a system-level tool — no need to install it into every virtual env. `pipx install runmon` installs it once, globally available, no reinstalling when you switch envs.
+
 ---
 
 ## Two ways to use it
@@ -65,6 +67,7 @@ Now open the app: live terminal, GPU/CPU/memory curves, progress/loss/ETA, and b
 | Command | What it does |
 |---|---|
 | `mon run -- <cmd>` | Run and monitor a command (the everyday wrapper) |
+| `mon wait` | Camp for free GPUs: phone buzzes when cards free up; with a command, auto-start it (reserved run) |
 | `mon attach` | Take over a job already running in tmux — no restart |
 | `mon daemon` | Keep the live connection to your phone open |
 | `mon pair` | Pair with the RunMon app (prints a QR code) |
@@ -82,6 +85,19 @@ mon run -- python train.py                          # simplest — your command 
 mon run --name exp1 --gpu 0,1 -- python train.py    # name the job + bind specific GPUs
 ```
 Progress, ETA, and loss are parsed automatically from stdout (works with tqdm / `Epoch x/y` / `loss=…`) — no instrumentation needed. Try `mon demo` / `mon demo --fail` first to see it in action.
+
+### `mon wait` — camp for GPUs & reserve a run
+
+All the cards taken? Let RunMon watch them for you — your phone buzzes the moment they free up; attach a command and it auto-starts once they do:
+
+```bash
+mon wait --gpus 2 --free-gb 30 -d       # phone buzzes when 2 cards each have 30GB free (-d = camp in background)
+mon wait --gpus 2 -- python train.py    # wait for 2 fully-idle cards, then auto-start with CUDA_VISIBLE_DEVICES set
+```
+
+- Without `--free-gb` a card must be **fully idle** (util ≤10%, VRAM ≤5% used); with it, only free VRAM matters (sharing a busy card is fine)
+- The condition must **hold for 3 minutes** before firing (tune with `--hold`, 0 = immediate) — a brief gap between someone else's jobs won't fool it
+- The reserved job is a regular `mon run`: live view, event notifications, and remote control all apply
 
 ### `mon attach` — take over a tmux job
 

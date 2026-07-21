@@ -11,6 +11,7 @@ const eventTypeLabels = {
   'gpu_hang': 'GPU 假死',
   'log_silence': '日志静默',
   'disk_full': '磁盘告警',
+  'gpu_free': 'GPU 空位(蹲卡)',
 };
 
 class Settings extends ChangeNotifier {
@@ -20,6 +21,7 @@ class Settings extends ChangeNotifier {
   int dndEnd = 8 * 60;    // 默认 08:00
   final Set<String> mutedTypes = {}; // 不推系统通知的事件类型
   double terminalFontSize = 13;
+  int diskThresholdPct = 90; // 磁盘告警阈值(实际生效在服务器,改动时下发同步)
 
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
@@ -31,6 +33,7 @@ class Settings extends ChangeNotifier {
       ..clear()
       ..addAll(p.getStringList('set_muted') ?? []);
     terminalFontSize = p.getDouble('set_termFont') ?? 13;
+    diskThresholdPct = p.getInt('set_diskPct') ?? 90;
     notifyListeners();
   }
 
@@ -42,6 +45,7 @@ class Settings extends ChangeNotifier {
     await p.setInt('set_dndEnd', dndEnd);
     await p.setStringList('set_muted', mutedTypes.toList());
     await p.setDouble('set_termFont', terminalFontSize);
+    await p.setInt('set_diskPct', diskThresholdPct);
     notifyListeners();
   }
 
@@ -71,6 +75,7 @@ class Settings extends ChangeNotifier {
     await _save();
   }
   Future<void> setTermFont(double v) async { terminalFontSize = v; await _save(); }
+  Future<void> setDiskThreshold(int v) async { diskThresholdPct = v; await _save(); }
 }
 
 final appSettings = Settings();
